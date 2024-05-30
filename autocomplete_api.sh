@@ -66,7 +66,14 @@ Most recently modified files in the current directory:
 $(ls -lt | head -n 20)
 \`\`\`
 
-# Suggested completion:
+
+# List of suggested completions:
+Provide a list of at least possible completions here, 
+each on a new line, each must be a valid command.
+Focus on the user's intent, recent commands, and the current environment.
+
+Completions:
+\`\`\`
 "
     echo "$prompt"
 
@@ -89,9 +96,8 @@ _build_payload() {
 }
 
 _openai_completion() {
-    local user_input="$@"
-
-    echo "_openai $user_input"
+    local default_user_input="write the three most likely commands for the user given their provided information"
+    local user_input="$@:-$default_user_input}"
 
     # Ensure the API key is set
     if [[ -n "$OPENAI_API_KEY" ]]; then
