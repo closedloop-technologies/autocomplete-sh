@@ -1,36 +1,81 @@
 #!/bin/bash
 set -e
 
-# Requires  sudo apt-get install jq
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "autocomplete.sh - jq is not installed. Please install it using the following command:" >&2
+    echo "sudo apt-get install jq" >&2
+    exit 1
+fi
 
 # HISTFILE=~/.bash_history   # Or wherever you bash history file is
 # set +o history
 # command_history=()
-
-_build_payload() {
-    local user_input="$1"
-
-    # Define contextual information for the completion request
-    local current_directory="$PWD"
-    local operating_system="$OSTYPE"
-    local shell_program="$BASH"
-
-    local system_prompt="You are a helpful bash_completion script.  \
+SYSTEM_MESSAGE_PROMPT="You are a helpful bash_completion script. \
 Generate relevant and concise auto-complete suggestion for the given user command \
 in the context of the current directory, operating system, command history, \
 and masked environment variable names. \
 Only provide the single most likely command for the user given their provided information."
 
-    local prompt="User command: $user_input
-Current directory: $current_directory
-Operating system: $operating_system
-Shell: $shell_program
 
-Suggested completion:"
+machine_signature() {
+    local signature=$(echo "$(uname -a) $user_name" | md5sum | cut -d ' ' -f 1)
+    echo "$signature"
+}
 
-    local escaped_prompt=$(echo "$prompt" | sed 's/\\/\\\\/g' | sed 's/"/\\"/g')
+# Constructs a LLM prompt with the user input and in-terminal contextual information
+_build_prompt() {
+    # Define contextual information for the completion request
+    local other_environment_variables=$(compgen -v | grep -v 'PWD|OSTYPE|BASH|USER|HOME|TERM|OLDPWD|HOSTNAME')
 
-    local payload=$(jq -n --arg system_prompt "$system_prompt" --arg prompt_content "$prompt" '{
+    local user_input="$1"
+    
+    local command_history=($(history 1 | awk '{print $2}'))
+    # local file_system=$(ls -lt | head -n 20)
+    # echo "file_system: $file_system"
+
+    local prompt="User command: \`$user_input\`
+
+# Terminal Context
+## Environment variables
+ * User name: \$USER=$USER
+ * Current directory: \$PWD=$PWD
+ * Previous directory: \$OLDPWD=$OLDPWD
+ * Home directory: \$HOME=$HOME
+ * Operating system: \$OSTYPE=$OSTYPE
+ * Shell: \$BASH=$BASH
+ * Terminal type: \$TERM=$TERM
+ * Hostname: \$HOSTNAME=$HOSTNAME
+
+Other defined environment variables
+\`\`\`
+$other_environment_variables
+\`\`\`
+
+## History
+Recently run commands (in order):
+\`\`\`
+$command_history
+\`\`\`
+
+## File system
+Most recently modified files in the current directory:
+\`\`\`
+$(ls -lt | head -n 20)
+\`\`\`
+
+# Suggested completion:
+"
+    echo "$prompt"
+
+}
+
+# Constructs the payload for the OpenAI API request
+_build_payload() {
+    local user_input="$1"
+    local prompt=$(_build_prompt "$user_input")
+
+    local payload=$(jq -cn --arg system_prompt "$SYSTEM_MESSAGE_PROMPT" --arg prompt_content "$prompt" '{
         model: "gpt-3.5-turbo",
         messages: [
             {role: "system", content: $system_prompt},
@@ -43,6 +88,8 @@ Suggested completion:"
 
 _openai_completion() {
     local user_input="$@"
+
+    echo "_openai $user_input"
 
     # Ensure the API key is set
     if [[ -n "$OPENAI_API_KEY" ]]; then
@@ -57,8 +104,7 @@ _openai_completion() {
         fi
     fi
     local payload=$(_build_payload "$user_input")
-
-    local response=$(curl -s -w "%{http_code}" https://api.openai.com/v1/chat/completions \
+    local response=$(\curl -s -w "%{http_code}" https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $api_key" \
   -d "$payload")
