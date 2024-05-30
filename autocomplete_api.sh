@@ -8,9 +8,6 @@ if ! command -v jq &> /dev/null; then
     exit 1
 fi
 
-# HISTFILE=~/.bash_history   # Or wherever you bash history file is
-# set +o history
-# command_history=()
 SYSTEM_MESSAGE_PROMPT="You are a helpful bash_completion script. \
 Generate relevant and concise auto-complete suggestion for the given user command \
 in the context of the current directory, operating system, command history, \
@@ -23,6 +20,14 @@ machine_signature() {
     echo "$signature"
 }
 
+# Get the last 20 commands from the bash history
+# GOTCHA: The history only populate if you run the command in the same terminal.  If you run it 
+# in a ./autocomplete_api.sh, it will not be populated since that runs in a different environment
+_get_command_history() {
+    local HISTORY_LIMIT=${1:-20}
+    echo "$(history | tail -n $HISTORY_LIMIT)"
+}
+
 # Constructs a LLM prompt with the user input and in-terminal contextual information
 _build_prompt() {
     # Define contextual information for the completion request
@@ -30,10 +35,7 @@ _build_prompt() {
 
     local user_input="$1"
     
-    local command_history=($(history 1 | awk '{print $2}'))
-    # local file_system=$(ls -lt | head -n 20)
-    # echo "file_system: $file_system"
-
+    local command_history=$(_get_command_history 20)
     local prompt="User command: \`$user_input\`
 
 # Terminal Context
