@@ -68,8 +68,9 @@ $(ls -lt | head -n 20)
 
 
 # List of suggested completions:
-Provide a list of at least possible completions here, 
-each on a new line, each must be a valid command.
+Provide a list of two to five possible completions here
+Each on a new line
+Each must be a valid command
 Focus on the user's intent, recent commands, and the current environment.
 
 Completions:
