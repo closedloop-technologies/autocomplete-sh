@@ -28,14 +28,31 @@ _get_command_history() {
     echo "$(history | tail -n $HISTORY_LIMIT)"
 }
 
+_get_help_message() {
+    # Store the output of ffmpeg --help in HELP_INFO
+    local USER_INPUT="$1"
+    local HELP_INFO=""
+
+    # Attempt to capture the help information
+    {
+        set +e
+        HELP_INFO=$(cat <<EOF
+    $($USER_INPUT --help 2>&1)
+EOF
+    )
+        set -e
+    } || HELP_INFO="No help information available"
+    echo "$HELP_INFO"
+}
+
 # Constructs a LLM prompt with the user input and in-terminal contextual information
 _build_prompt() {
     # Define contextual information for the completion request
     local other_environment_variables=$(compgen -v | grep -v 'PWD|OSTYPE|BASH|USER|HOME|TERM|OLDPWD|HOSTNAME')
 
     local user_input="$1"
-    
     local command_history=$(_get_command_history 20)
+    local help_message=$(_get_help_message "$user_input")
     local prompt="User command: \`$user_input\`
 
 # Terminal Context
@@ -66,12 +83,16 @@ Most recently modified files in the current directory:
 $(ls -lt | head -n 20)
 \`\`\`
 
+## Help Information
+$help_message
 
 # List of suggested completions:
 Provide a list of two to five possible completions here
 Each on a new line
 Each must be a valid command
 Focus on the user's intent, recent commands, and the current environment.
+
+If you are unable to provide any completions, please output: $user_input
 
 Completions:
 \`\`\`
@@ -147,4 +168,5 @@ _openai_completion() {
     fi
 }
 
-_openai_completion "$@"
+# _openai_completion "$@"
+_build_prompt "$@"

@@ -1,5 +1,5 @@
 # autocomplete-sh
-Large language model in the terminal!  Less `--help` and `man` and more getting stuff done
+LLM autocomplete commands in the terminal!  Less `--help` and `man` and more getting stuff done.
 
 ## Core Tasks
 
@@ -7,6 +7,14 @@ Large language model in the terminal!  Less `--help` and `man` and more getting 
 - [ ] It should install a bash completion script for all commands
 - [ ] It should have a configuration file to specify the language model and API key
 - [ ] A CLI to manage the configuration file and install / uninstall the bash completion script
+
+### Context should include:
+- [x] environment variables
+- [x] files
+- [x] command history
+- [x] help text
+- [ ] previous command outputs and errors
+
 
 ### Nice to Haves
 - [ ] Caching
