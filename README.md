@@ -1,10 +1,8 @@
 # autocomplete-sh
 LLM autocomplete commands in the terminal!  Less `--help` and `man` and more getting stuff done.
 
- * Config File
- * CLI
- * Bash Completion Script
- * Caching
+It should run only when the default completion returns no results.
+
 
 ## Core Tasks
 
@@ -23,7 +21,17 @@ LLM autocomplete commands in the terminal!  Less `--help` and `man` and more get
 
 ### Nice to Haves
 - [ ] Caching
-- [ ] Access Environment Variables
-- [ ] Access file tree
-- [ ] Access to command history
-- [ ] Access to previous command outputs
+- [ ] Support for other shells
+- [ ] Support for custom language models
+
+## File Structure
+```
+
+# The script should be placed in
+/usr/bin/autocomplete # if apt-get install autocomplete
+/usr/local/bin/autocomplete # if installed manually
+
+# Configuration Files
+~/.autocomplete/config
+~/.autocomplete/cache/...
+```
