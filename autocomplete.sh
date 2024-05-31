@@ -1,60 +1,6 @@
 #!/bin/bash
 set -e
 
-HISTFILE=~/.bash_history   # Or wherever you bash history file is
-set +o history
-# command_history=()
-
-_sanitize_history() {
-    local history="$1"
-    local sanitized_history=""
-
-    while IFS= read -r line; do
-        line=$(echo "$line" | sed 's/\/[[:alnum:]_.-]\+\/[[:alnum:]_.-]\+/\/path\/to\/file/g')
-        line=$(echo "$line" | sed 's/[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}\.[0-9]\{1,3\}/IP_ADDRESS/g')
-        line=$(echo "$line" | sed 's/[A-Za-z0-9._%+-]\+@[A-Za-z0-9.-]\+\.[A-Z|a-z]\{2,\}/EMAIL_ADDRESS/g')
-        line=$(echo "$line" | sed 's/https\?:\/\/[[:alnum:]_.-]\+\.[[:alnum:]_.-]\+/URL/g')
-        line=$(echo "$line" | sed 's/[[:alnum:]_-]\+:[[:alnum:]_-]\+/USER:GROUP/g')
-
-        sanitized_history+="$line\n"
-    done <<< "$history"
-
-    echo "$sanitized_history"
-}
-
-sanitize_recent_history() {
-    local last="${1:-10000}"
-    echo "$last\n---\n"
-    set -o history
-    local history=$(cat "$HISTFILE" | awk 'NR > 1 {sub(/^[[:space:]]+/, ""); print $0}' | tail -n 10)
-    set +o history
-    # local history=$(history | awk '{$1=""; sub(/^[ \t]+/, ""); print}' | tail -n $last)
-    # local history=$(history $last | awk '{$1=""; sub(/^[ \t]+/, ""); print}')
-    # local history=${fc -l -n | tail -n $last | awk '{$1=""; sub(/^[ \t]+/, ""); print'}
-    echo "$history\n---\n"
-    # cat "$HISTFILE"
-    # local sanitized_history=$(_sanitize_history "$history")
-    # echo "$sanitized_history\n---\n"
-}
-
-
-_mask_env_vars() {
-    local env_vars="$1"
-    local masked_env_vars=""
-
-    while IFS= read -r var; do
-        case "$var" in
-            HOME|PATH|USER|SHELL|LANG|TERM)
-                masked_env_vars+="$var,"
-                ;;
-            *)
-                masked_env_vars+="MASKED_VARIABLE,"
-                ;;
-        esac
-    done <<< "$env_vars"
-
-    echo "${masked_env_vars%,}"
-}
 
 _custom_completion() {
     local user_input="${COMP_LINE}"

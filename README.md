@@ -1,6 +1,11 @@
 # autocomplete-sh
 LLM autocomplete commands in the terminal!  Less `--help` and `man` and more getting stuff done.
 
+ * Config File
+ * CLI
+ * Bash Completion Script
+ * Caching
+
 ## Core Tasks
 
 - [x] It should call a language model to generate the completion
