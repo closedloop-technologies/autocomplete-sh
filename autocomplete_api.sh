@@ -86,16 +86,13 @@ $(ls -lt | head -n 20)
 ## Help Information
 $help_message
 
-# List of suggested completions:
-Provide a list of two to five possible completions here
+# List of suggested completions or commands:
+Provide a list of two to five possible completions or rewritten commands here
 Each on a new line
-Each must be a valid command
+Each must be a valid command or set of commands
 Focus on the user's intent, recent commands, and the current environment.
 
-If you are unable to provide any completions, please output: $user_input
-
-Completions:
-\`\`\`
+Completions or rewritten commands here:
 "
     echo "$prompt"
 
@@ -117,9 +114,10 @@ _build_payload() {
     echo "$payload"
 }
 
-_openai_completion() {
+
+openai_completion() {
     local default_user_input="write the three most likely commands for the user given their provided information"
-    local user_input="$@:-$default_user_input}"
+    local user_input=${@:-$default_user_input}
 
     # Ensure the API key is set
     if [[ -n "$OPENAI_API_KEY" ]]; then
@@ -143,7 +141,9 @@ _openai_completion() {
     if [[ $status_code -eq 200 ]]; then
         local response_body=$(echo "$response" | sed '$d')
         local content=$(echo "$response_body" | jq -r '.choices[0].message.content')
-        echo "$content"
+        # for each line in content, remove any lines starting with ``` or blank lines
+        local processed_content=$(echo "$content" | grep -v '^\s*```'  | sed '/^\s*$/d')
+        echo $processed_content
     else
         local error=""
         case $status_code in
@@ -168,5 +168,5 @@ _openai_completion() {
     fi
 }
 
-# _openai_completion "$@"
-_build_prompt "$@"
+openai_completion "$@"
+# _build_prompt "$@"
