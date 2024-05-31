@@ -106,14 +106,9 @@ DO NOT wrap the commands in backticks or quotes such as \`command\` or "command"
 Each command must be on a new line and must not span multiple lines
 Each must be a valid command or set of commands
 
-The list should be formatted as follows:
- - command1
- - command2
- - command3
-
 Please focus on the user's intent, recent commands, and the current environment when brainstorming completions.
 Take a deep breath. You got this!
-Begin your list of completions, suggestions, or rewritten commands below this line:
+RETURN A JSON OBJECT WITH THE COMPLETIONS
 "
     echo "$prompt"
 
@@ -130,7 +125,31 @@ _build_payload() {
             {role: "system", content: $system_prompt},
             {role: "user", content: $prompt_content}
         ],
-        temperature: 0.0
+        temperature: 0.0,
+        response_format: { "type": "json_object" },
+        tool_choice: {"type": "function", "function": {"name": "bash_completions"}},
+        tools:[
+        {
+            "type": "function",
+            "function": {
+                "name": "bash_completions",
+                "description": "syntacticly correct command-line suggestions based on the users input",
+                "parameters": {
+                    "type": "object",
+                    "properties": {
+                        "commands": {
+                            "type": "array",
+                            "items": {
+                                "type": "string",
+                                "description": "A suggested command"
+                            }
+                        },
+                    },
+                    "required": ["commands"],
+                },
+            },
+        }
+    ]
     }')
     echo "$payload"
 }
@@ -161,10 +180,11 @@ openai_completion() {
     local status_code=$(echo "$response" | tail -n1)
     if [[ $status_code -eq 200 ]]; then
         local response_body=$(echo "$response" | sed '$d')
-        local content=$(echo "$response_body" | jq -r '.choices[0].message.content')
-        # for each line in content, remove any lines starting with ``` or blank lines
-        local processed_content=$(echo "$content" | grep -v '^\s*```'  | sed '/^\s*$/d')
-        echo "$processed_content"
+        local content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
+        content=$(echo "$content" | jq -r '.commands')
+        # Map the commands to a list of completions
+        local completions=$(echo "$content" | jq -r '.[]')
+        echo "$completions"
     else
         case $status_code in
             400)
@@ -262,7 +282,7 @@ _autocompletesh() {
             if [[ $(echo "$completions" | wc -l) -eq 1 ]]; then
                 local first_line=$(echo "$completions" | head -n 1)
                 if [[ "$first_line" == "$command"* ]]; then
-                    readarray -t COMPREPLY <<< "$(echo "$first_line" | sed "s/[[:space:]]*-*[[:space:]]*$command[[:space:]]*//")"
+                    readarray -t COMPREPLY <<< "$(echo "$first_line" | sed "s/$command[[:space:]]*//")"
                 else
                     readarray -t COMPREPLY <<< "$completions"
                 fi
