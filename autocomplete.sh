@@ -1,7 +1,12 @@
 #!/bin/bash
 
+# autocomplete.sh - LLM Powered Bash Completion
+# This script provides bash completion suggestions using the OpenAI API.
+# MIT License - ClosedLoop Technologies, Inc.
+# Sean Kruzel 2024
+
 # Do not use `set -euo pipefail` or similar because this a 
-# bash completion script and it will change the behavior of the shell
+# bash completion script and it will change the behavior of the shell invoking it
 
 echo_error() {
     echo -e "\n\e[31mautocomplete.sh - $1\e[0m" >&2
