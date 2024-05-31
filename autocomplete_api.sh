@@ -3,10 +3,14 @@ set -e
 
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
-    echo "autocomplete.sh - jq is not installed. Please install it using the following command:" >&2
-    echo "sudo apt-get install jq" >&2
-    exit 1
+    echo "autocomplete.sh - jq is not installed. Please install it using the following command: \`sudo apt-get install jq\`" >&2
 fi
+
+###############################################################################
+#
+# LARGE LANGUAGE MODEL COMPLETION FUNCTIONS
+#
+###############################################################################
 
 SYSTEM_MESSAGE_PROMPT="You are a helpful bash_completion script. \
 Generate relevant and concise auto-complete suggestion for the given user command \
@@ -127,7 +131,7 @@ openai_completion() {
         if [[ -f "$config_file" ]]; then
             local api_key=$(awk '/api_key:/ {print $2}' "$config_file")
         else
-            echo "API key not found. Please set the OPENAI_API_KEY environment variable or create a ~/.autocomplete-sh YAML configuration file with the 'api_key' field."
+            echo "autocomplete.sh - Please set the OPENAI_API_KEY environment variable or create a ~/.autocomplete-sh YAML configuration file with the 'api_key' field." >&2
             return
         fi
     fi
@@ -145,28 +149,107 @@ openai_completion() {
         local processed_content=$(echo "$content" | grep -v '^\s*```'  | sed '/^\s*$/d')
         echo $processed_content
     else
-        local error=""
         case $status_code in
             400)
-                error="autocomplete.sh - Bad Request: The API request was invalid or malformed."
+                echo "autocomplete.sh - Bad Request: The API request was invalid or malformed." >&2
                 ;;
             401)
-                error="autocomplete.sh - Unauthorized: The provided API key is invalid or missing."
+                echo "autocomplete.sh - Unauthorized: The provided API key is invalid or missing." >&2
                 ;;
             429)
-                error="autocomplete.sh - Too Many Requests: The API rate limit has been exceeded."
+                echo "autocomplete.sh - Too Many Requests: The API rate limit has been exceeded." >&2
                 ;;
             500)
-                error="autocomplete.sh - Internal Server Error: An unexpected error occurred on the API server."
+                echo "autocomplete.sh - Internal Server Error: An unexpected error occurred on the API server." >&2
                 ;;
             *)
-                error="autocomplete.sh - Error: Unexpected status code $status_code received from the API."
+                echo "autocomplete.sh - Error: Unexpected status code $status_code received from the API." >&2
                 ;;
         esac
-        echo "$error" >&2
-        return 1 # Error
+        echo ""
     fi
 }
 
-openai_completion "$@"
-# _build_prompt "$@"
+
+###############################################################################
+#
+# Completion Functions
+#
+###############################################################################
+# Get the default completion function for a command
+_get_default_completion_function() {
+    local cmd="$1"
+    complete -p "$cmd" 2>/dev/null | awk -F' ' '{ for(i=1;i<=NF;i++) { if ($i ~ /^-F$/) { print $(i+1); exit; } } }'
+}
+
+_default_completion() {
+    # Get the current word being completed
+    local current_word="${COMP_WORDS[COMP_CWORD]}"
+    
+    # Get the default completion function for the command
+    local cmd="${COMP_WORDS[0]}"
+    local default_func
+    default_func=$(_get_default_completion_function "$cmd")
+    
+    # If a default completion function exists, call it
+    if [[ -n "$default_func" ]]; then
+        "$default_func"
+    else
+        # Fallback if no default completion function is found
+        COMPREPLY=( $(compgen -f -- "$current_word") )
+    fi
+}
+
+_custom_completion() {
+    local command="${COMP_WORDS[0]}"
+    local current="${COMP_WORDS[COMP_CWORD]}"
+    
+    # Attempt to get default completions first
+    _default_completion
+    
+    # If COMPREPLY is not empty, use it; otherwise, use OpenAI API completions
+    if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+        # Prepare input for the language model API
+        local user_input="$command $current"
+
+        # Get completions from the OpenAI API (assuming openai_completion is defined)
+        local completions
+        # completions=$(openai_completion "$user_input" 2>/dev/null)
+        completions="FOLLOW THE WHITE RABBIT"
+        
+        # If OpenAI API returns completions, use them
+        if [[ -n "$completions" ]]; then
+            readarray -t COMPREPLY <<< "$completions"
+        fi
+    fi
+}
+
+# Register the completion function for a specific command
+# complete -F _custom_completion your_command
+
+
+# # Register the completion function for a specific command
+# complete -F _custom_completion your_command
+
+
+###############################################################################
+#
+# CLI ENTRY POINT
+#
+###############################################################################
+
+
+###############################################################################
+#
+# ENABLE CLI COMPLETION
+#
+###############################################################################
+
+# Set as the default completion function (-D )
+# Also enable for empty commands (-E)
+# Allow fallback to default completion function (-o default)
+complete -D -E -F _custom_completion -o default
+
+
+# complete -D -F _custom_completion ac
+# openai_completion "$@"
