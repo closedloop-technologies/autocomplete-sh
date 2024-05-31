@@ -12,26 +12,35 @@ set -e
 
 # Usage
 # install
-# delete
+# remove
 # config
 # config set <key> <value>
 # enable
 # disable
 # command --dry-run # runs the autocomplete command
-
 show_help() {
     echo "autocomplete.sh - LLM Powered Bash Completion"
-    echo "---------------------------------------------"
-    echo "Usage: autocomplete [install|delete|config|enable|disable|command|--help]"
-    echo "  install: Install the autocomplete script"
-    echo "  delete: Delete the autocomplete script"
-    echo "  config: Show the configuration file"
-    echo "  config set <key> <value>: Set a configuration value"
-    echo "  enable: Enable the autocomplete script"
-    echo "  disable: Disable the autocomplete script"
-    echo "  command: Run the autocomplete command"
-    echo "  command --dry-run: Only show the prompt without running the command"
-    echo "---------------------------------------------"
+    echo "Usage: autocomplete [options] command"
+    echo "       autocomplete [options] install|remove|config|enable|disable|command|--help"
+    echo
+    echo "autocomplete.sh is a script to enhance bash completion with LLM capabilities."
+    echo
+    echo "Once installed and enabled, it will provide suggestions for the current command."
+    echo "Just by pressing the Tab key, you can get the most likely completion for the command."
+    echo "It provides various commands to manage and configure the autocomplete features."
+    echo
+    echo "Most used commands:"
+    echo "  install             Install the autocomplete script"
+    echo "  remove              Remove the autocomplete script"
+    echo "  config              Show the configuration file"
+    echo "  config set <key> <value>  Set a configuration value"
+    echo "  enable              Enable the autocomplete script"
+    echo "  disable             Disable the autocomplete script"
+    echo "  command             Run the autocomplete command"
+    echo "  command --dry-run   Only show the prompt without running the command"
+    echo
+    echo "Submit bugs or feedback here: https://github.com/closedloop-technologies/autocomplete-sh/issues"
+    echo "For more information, visit: https://autocomplete.sh"
 }
 
 show_config() {
@@ -69,8 +78,8 @@ install_command() {
     echo "install_command"
 }
 
-delete_command() {
-    echo "delete_command"
+remove_command() {
+    echo "remove_command"
 }
 
 enable_command() {
@@ -109,8 +118,8 @@ case "$1" in
     install)
         install_command
         ;;
-    delete)
-        delete_command
+    remove)
+        remove_command
         ;;
     config)
         config_command $@
@@ -123,5 +132,8 @@ case "$1" in
         ;;
     command)
         command_command $@
+        ;;
+    *)
+        show_help
         ;;
 esac
