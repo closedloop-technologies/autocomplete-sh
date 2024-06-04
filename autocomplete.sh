@@ -12,6 +12,10 @@ echo_error() {
     echo -e "\n\e[31mautocomplete.sh - $1\e[0m" >&2
 }
 
+echo_green() {
+    echo -e "\n\e[32m$1\e[0m"
+}
+
 # Check if jq is installed
 if ! command -v jq &> /dev/null; then
     echo_error "jq is not installed. Please install it using the following command: \`sudo apt-get install jq\`"
@@ -285,7 +289,6 @@ _autocompletesh() {
         # move cursor back input_length characters
         tput cub $input_length
         # Print "Searching ..." in place of the current word make it green
-        # echo -en "\e[32mSearching ..."
         echo -en "\033[32;5mSearching\033[0m \033[32m..."
         # Calculate the length of the "Searching ..." string
         local search_length=13
@@ -346,7 +349,7 @@ _autocompletesh() {
 ###############################################################################
 
 show_help() {
-    echo "autocomplete.sh - LLM Powered Bash Completion"
+    echo_green "autocomplete.sh - LLM Powered Bash Completion"
     echo "Usage: autocomplete [options] command"
     echo "       autocomplete [options] install|remove|info|config|enable|disable|command|--help"
     echo
@@ -451,10 +454,12 @@ disable_command() {
 
 command_command() {
     
-    if [ "$1" == "--dry-run" ]; then
-        echo "$(_build_prompt "${@:2}")"
-        return
-    fi
+    for arg in "$@"; do
+        if [ "$arg" == "--dry-run" ]; then
+            echo "$(_build_prompt "${@:2}")"
+            return
+        fi
+    done
     echo "$(openai_completion "$@" || true)"
 }
 
