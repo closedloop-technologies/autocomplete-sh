@@ -125,7 +125,7 @@ _build_payload() {
     local prompt=$(_build_prompt "$@")
 
     local payload=$(jq -cn --arg system_prompt "$SYSTEM_MESSAGE_PROMPT" --arg prompt_content "$prompt" '{
-        model: "gpt-3.5-turbo",
+        model: "gpt-4o",
         messages: [
             {role: "system", content: $system_prompt},
             {role: "user", content: $prompt_content}
@@ -177,14 +177,14 @@ openai_completion() {
         fi
     fi
     local payload=$(_build_payload "$user_input")
-    local response=$(\curl -s -w "%{http_code}" https://api.openai.com/v1/chat/completions \
+    # Add 5 second timeout to the curl command
+    local response=$(\curl -s -m 5 -w "%{http_code}" https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $api_key" \
   -d "$payload")
-
     local status_code=$(echo "$response" | tail -n1)
+    local response_body=$(echo "$response" | sed '$d')
     if [[ $status_code -eq 200 ]]; then
-        local response_body=$(echo "$response" | sed '$d')
         local content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
         content=$(echo "$content" | jq -r '.commands')
         # Map the commands to a list of completions
@@ -205,10 +205,9 @@ openai_completion() {
                 echo_error "Internal Server Error: An unexpected error occurred on the API server."
                 ;;
             *)
-                echo_error "Error: Unexpected status code $status_code received from the API."
+                echo_error "Unknown Error: Unexpected status code $status_code received from the API - $response_body"
                 ;;
         esac
-        echo ""
     fi
 }
 
@@ -277,7 +276,37 @@ _autocompletesh() {
     if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
         # Prepare input for the language model API
         local user_input="$command $current"
+
+        # replace $current on the screen with the text "Searching ..."
+        # This is a workaround to show the user that the script is working
+        # while the completions are being fetched
+        # Shift cursor to the beginning of the line and clear the line
+        local input_length=${#current}
+        # move cursor back input_length characters
+        tput cub $input_length
+        # Print "Searching ..." in place of the current word make it green
+        # echo -en "\e[32mSearching ..."
+        echo -en "\033[32;5mSearching\033[0m \033[32m..."
+        # Calculate the length of the "Searching ..." string
+        local search_length=13
+        # Calculate the number of spaces to fill the rest of the line
+        local spaces=$((input_length - search_length))
+        # Fill the rest of the line with spaces
+        if [[ $spaces -gt 0 ]]; then
+            for i in $(seq 1 $spaces); do
+                echo -n "."
+            done
+        fi
+        # echo -en "\e[0m"
+        echo -en "\033[0m"
         local completions=$(openai_completion "$user_input" || true)
+
+        # Shift cursor back to the original position and clear everything to the right
+        if [[ $spaces -gt 0 ]]; then
+            tput cub $spaces
+        fi
+        tput cub $search_length
+        echo -en $current
 
         # If OpenAI API returns completions, use them
         if [[ -n "$completions" ]]; then
@@ -293,6 +322,10 @@ _autocompletesh() {
                 fi
             else
                 readarray -t COMPREPLY <<< "$completions"
+            fi
+            # If the completions are empty, fall back to $current
+            if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+                COMPREPLY=("$current")
             fi
         fi
     fi
@@ -399,9 +432,13 @@ enable_command() {
     # Also enable for empty commands (-E)
     # Allow fallback to default completion function (-o default)
     local is_enabled=$(check_if_enabled)
-    if [ -z "$is_enabled" ]; then
-        complete -D -E -F _autocompletesh -o default
+    if [ "$is_enabled" ]; then
+        disable_command
+        # print in green
+        
+        echo "re-enabling autocomplete.sh"
     fi
+    complete -D -E -F _autocompletesh -o default
 }
 
 disable_command() {
