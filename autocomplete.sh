@@ -13,7 +13,7 @@ echo_error() {
 }
 
 echo_green() {
-    echo -e "\n\e[32m$1\e[0m"
+    echo -e "\e[32m$1\e[0m"
 }
 
 # Check if jq is installed
@@ -193,7 +193,7 @@ openai_completion() {
         content=$(echo "$content" | jq -r '.commands')
         # Map the commands to a list of completions
         local completions=$(echo "$content" | jq -r '.[]')
-        echo "$completions"
+        echo -n "$completions"
     else
         case $status_code in
             400)
@@ -282,26 +282,28 @@ _autocompletesh() {
         local user_input="$command $current"
 
         # replace $current on the screen with the text "Searching ..."
-        # This is a workaround to show the user that the script is working
+        # This is a UX feature to show the user that the script is working
         # while the completions are being fetched
         # Shift cursor to the beginning of the line and clear the line
-        local input_length=${#current}
         # move cursor back input_length characters
-        tput cub $input_length
         # Print "Searching ..." in place of the current word make it green
-        echo -en "\033[32;5mSearching\033[0m \033[32m..."
         # Calculate the length of the "Searching ..." string
-        local search_length=13
         # Calculate the number of spaces to fill the rest of the line
-        local spaces=$((input_length - search_length))
         # Fill the rest of the line with spaces
+        local input_length=${#current}
+        tput cub $input_length
+        echo -en "\033[32;5mSearching\033[0m \033[32m..."
+        local search_length=13
+        local spaces=$((input_length - search_length))
         if [[ $spaces -gt 0 ]]; then
             for i in $(seq 1 $spaces); do
                 echo -n "."
             done
         fi
-        # echo -en "\e[0m"
         echo -en "\033[0m"
+        # End of fancy formatting
+
+        # Call the language model
         local completions=$(openai_completion "$user_input" || true)
 
         # Shift cursor back to the original position and clear everything to the right
@@ -313,23 +315,29 @@ _autocompletesh() {
 
         # If OpenAI API returns completions, use them
         if [[ -n "$completions" ]]; then
+            # echo -en ""
             # Clean up the results, if there is only one line in $completions
             # and that line starts with $command, 
             # remove the $command from the line beggining of the line
-            if [[ $(echo "$completions" | wc -l) -eq 1 ]]; then
-                local first_line=$(echo "$completions" | head -n 1)
-                if [[ "$first_line" == "$command"* ]]; then
-                    readarray -t COMPREPLY <<< "$(echo "$first_line" | sed "s/$command[[:space:]]*//")"
-                else
-                    readarray -t COMPREPLY <<< "$completions"
-                fi
+            # echo "$completions"
+            num_rows=$(echo "$completions" | wc -l)
+            # echo "Number of rows: $num_rows"
+            if [[ $num_rows -eq 1 ]]; then
+                readarray -t COMPREPLY <<< "$(echo -n "$completions" | sed "s/$command[[:space:]]*//")"
             else
-                readarray -t COMPREPLY <<< "$completions"
+                local my_completions="A
+B
+C
+D"
+                readarray -t COMPREPLY <<< "$(echo -n "$my_completions")"
+                # mapfile -t completion_options <<< "$completions"
+                # echo completion_options
+                # COMPREPLY=("$completion_options")
             fi
-            # If the completions are empty, fall back to $current
-            if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
-                COMPREPLY=("$current")
-            fi
+        fi
+        # If the completions are empty, fall back to $current
+        if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+            COMPREPLY=("$current")
         fi
     fi
 }
