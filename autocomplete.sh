@@ -14,11 +14,6 @@
 # Do not use `set -euo pipefail` or similar because this a 
 # bash completion script and it will change the behavior of the shell invoking it
 
-# Check if jq is installed
-if ! command -v jq &> /dev/null; then
-    echo_error "jq is not installed. Please install it using the following command: \`sudo apt-get install jq\`"
-fi
-
 ###############################################################################
 #
 # FORMATTING FUNCTIONS
@@ -50,6 +45,13 @@ echo_searching() {
 #
 ###############################################################################
 
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo_error "jq is not installed. Please install it using the following command: \`sudo apt-get install jq\`"
+fi
+
+
 _get_terminal_info() {
     local terminal_info=" * User name: \$USER=$USER
  * Current directory: \$PWD=$PWD
@@ -72,14 +74,14 @@ machine_signature() {
 _system_info() {
     echo "# System Information"
     echo
-    echo "$(uname -a)"
+    uname -a
     echo "SIGNATURE: $(machine_signature)"
     echo
     echo "BASH_VERSION: $BASH_VERSION"
     echo "BASH_COMPLETION_VERSINFO: ${BASH_COMPLETION_VERSINFO}"
     echo
     echo "## Terminal Information"
-    echo "$(_get_terminal_info)"
+    _get_terminal_info
 }
 
 
@@ -91,7 +93,7 @@ _completion_vars() {
     echo "COMP_POINT: ${COMP_POINT}"
     echo "COMP_TYPE: ${COMP_TYPE}"
     echo "COMP_WORDBREAKS: ${COMP_WORDBREAKS}"
-    echo "COMP_WORDS: ${COMP_WORDS}"
+    echo "COMP_WORDS: ${COMP_WORDS[@]}"
 }
 
 
@@ -118,13 +120,10 @@ The output must not contain any backticks or quotes such as \`command\` or \"com
 }
 
 _get_output_instructions() {
-    echo "Provide a list of suggested completions or commands that could be run in the terminal. \
-
-YOU MUST provide a list of two to five possible completions or rewritten commands here
-DO NOT wrap the commands in backticks or quotes such as \`command\` or "command" or ```command```
-
+    echo "Provide a list of suggested completions or commands that could be run in the terminal.
+YOU MUST provide a list of two to five possible completions or rewritten commands here 
+DO NOT wrap the commands in backticks or quotes such as \`command\` or "command" or ```command``` 
 Each must be a valid command or set of commands somehow chained together that could be run in the terminal
-
 Please focus on the user's intent, recent commands, and the current environment when brainstorming completions.
 Take a deep breath. You got this!
 RETURN A JSON OBJECT WITH THE COMPLETIONS"
@@ -215,6 +214,8 @@ _build_payload() {
     local user_input="$1"
     local prompt=$(_build_prompt "$@")
 
+    echo "$prompt" > /tmp/autocomplete_prompt.txt
+
     local system_message_prompt=$(_get_system_message_prompt)
 
     local payload=$(jq -cn --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
@@ -249,12 +250,13 @@ _build_payload() {
         }
     ]
     }')
+    echo "$payload" > /tmp/autocomplete_payload.txt
     echo "$payload"
 }
 
 
 openai_completion() {
-    local default_user_input="write the three most likely commands for the user given their provided information"
+    local default_user_input="Write two to six most likely commands given the provided information"
     local user_input=${@:-$default_user_input}
 
     # Ensure the API key is set
@@ -271,17 +273,20 @@ openai_completion() {
     fi
     local payload=$(_build_payload "$user_input")
     # Add 5 second timeout to the curl command
-    local response=$(\curl -s -m 5 -w "%{http_code}" https://api.openai.com/v1/chat/completions \
+    local response=$(\curl -s -m 30 -w "%{http_code}" https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $api_key" \
   -d "$payload")
+
+    echo "$response" > /tmp/autocomplete_response.txt
     local status_code=$(echo "$response" | tail -n1)
     local response_body=$(echo "$response" | sed '$d')
     if [[ $status_code -eq 200 ]]; then
         local content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
         content=$(echo "$content" | jq -r '.commands')
-        # Map the commands to a list of completions
-        local completions=$(echo "$content" | jq -r '.[]')
+
+        # Map the commands to a list of completions and remove empty lines
+        local completions=$(echo "$content" | jq -r '.[]' | grep -v '^$')
 
         # TODO is this -n or no?
         echo -n "$completions"
@@ -323,12 +328,21 @@ _get_default_completion_function() {
 
 _default_completion() {
     # Get the current word being completed
-    local current_word="${COMP_WORDS[COMP_CWORD]}"
+    # Check if COMP_WORDS is empty
+    local current_word=""
+    local first_word=""
+
+    # Check it COMP_WORDS IS NOT EMPTY
+    if [[ -n "${COMP_WORDS[@]}" ]]; then
+        first_word="${COMP_WORDS[0]}"
+        # Check if COMP_CWORD is defined and is valid for COMP_WORDS
+        if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
+            current_word="${COMP_WORDS[COMP_CWORD]}"
+        fi
+    fi
 
     # Get the default completion function for the command
-    local cmd="${COMP_WORDS[0]}"
-    local default_func
-    default_func=$(_get_default_completion_function "$cmd")
+    local default_func=$(_get_default_completion_function "$first_word")
 
     # If a default completion function exists, call it
     if [[ -n "$default_func" ]]; then
@@ -351,15 +365,22 @@ _default_completion() {
 _autocompletesh() {
 
     # _completion_vars
-    local command="${COMP_WORDS[0]}"
-    local current="${COMP_WORDS[COMP_CWORD]}"
+    local current=""
+    local first_word=""
+
+    # Check it COMP_WORDS IS NOT EMPTY
+    if [[ -n "${COMP_WORDS[@]}" ]]; then
+        command="${COMP_WORDS[0]}"
+        # Check if COMP_CWORD is defined and is valid for COMP_WORDS
+        if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
+            current="${COMP_WORDS[COMP_CWORD]}"
+        fi
+    fi
 
     # TODO If COMP_TYPE != 9, then what should we do?
     
     # Attempt to get default completions first
     # _default_completion
-
-    # TODO if 
 
     # If COMPREPLY is not empty, use it; otherwise, use OpenAI API completions
     if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
@@ -367,38 +388,45 @@ _autocompletesh() {
         local user_input="${COMP_LINE-"$command $current"}"
 
         # Clear the text to be autocompleted
-        local input_length=${#current}
-        tput cub $input_length
+        local input_length=${#user_input}
+        # tput cub $input_length
 
-        local search_length=13
-        local padding=$((input_length - search_length))
+        # Clear the full line to the left and to the right
+        # tput el1; tput el
+
+        # local search_length=13
+        # local padding=$((input_length - search_length))
         # Show the "Searching ..." text
-        echo_searching $padding
+        # echo_searching $padding
     
         # Call the language model
         local completions=$(openai_completion "$user_input" || true)
 
         # Revert display back to the original text
-        if [[ $padding -gt 0 ]]; then
-            tput cub $padding
-        fi
-        tput cub $search_length
-        echo -en $current
-
+        # tput el
+        # if [[ $padding -gt 0 ]]; then
+        #     tput cub $padding
+        # fi
+        # tput cub $search_length
+        # echo -en $current
+        
         # If OpenAI API returns completions, use them
         if [[ -n "$completions" ]]; then
 
             # write $completions to a file for debugging
-            echo "$completions" > /tmp/completions.txt
-            num_rows=$(echo "$completions" | wc -l)
-            
+            echo "$completions" > /tmp/autocomplete_completions.txt
+            # find and replace all : in $completions with an escaped version
+            completions=$(echo "$completions" | sed 's/:/\\:/g')
+
+            # num_rows=$(echo "$completions" | wc -l)
             COMPREPLY=()
-            if [[ $num_rows -eq 1 ]]; then    
-                local first_line=$(echo -n "$completions" | head -n 1)
-                readarray -t COMPREPLY <<< "$(echo -n "$first_line" | sed "s/$command[[:space:]]*//")"
-            else
-                readarray -t COMPREPLY <<< "$(echo "$completions")"
-            fi
+            # if [[ $num_rows -eq 1 ]]; then    
+            #     local first_line=$(echo -n "$completions" | head -n 1)
+            #     readarray -t COMPREPLY <<< "$(echo -n "$first_line" | sed "s/$command[[:space:]]*//")"
+            # else
+            #     readarray -t COMPREPLY <<< "$(echo "$completions")"
+            # fi
+            readarray -t COMPREPLY <<< "$(echo "$completions")"
         fi
         # If the completions are empty, fall back to $current
         if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
@@ -507,7 +535,6 @@ enable_command() {
     fi
     # Set as the default completion function (-D )
     # Also enable for empty commands (-E)
-    # Allow fallback to default completion function (-o default)
     complete -D -E -F _autocompletesh -o nospace
 }
 
@@ -547,7 +574,7 @@ case "$1" in
         remove_command
         ;;
     config)
-        config_command $@
+        config_command "$@"
         ;;
     enable)
         enable_command
@@ -556,9 +583,9 @@ case "$1" in
         disable_command
         ;;
     command)
-        command_command $@
+        command_command "$@"
         ;;
     *)
-        command_command $@
+        echo_error "Unknown command $1 - run \`autocomplete --help\` or goto https://autocomplete.sh for more information"
         ;;
 esac
