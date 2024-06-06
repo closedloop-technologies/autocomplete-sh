@@ -6,6 +6,11 @@
 # MIT License - ClosedLoop Technologies, Inc.
 # Sean Kruzel 2024
 
+## TODO 
+# autocompletecli_completion()
+# Install via curl like https://github.com/nvm-sh/nvm/tree/master
+# tests coverage via https://github.com/nvm-sh/nvm/tree/master
+
 # Do not use `set -euo pipefail` or similar because this a 
 # bash completion script and it will change the behavior of the shell invoking it
 
@@ -503,7 +508,7 @@ enable_command() {
     # Set as the default completion function (-D )
     # Also enable for empty commands (-E)
     # Allow fallback to default completion function (-o default)
-    complete -D -E -F _autocompletesh -o nospace -o default
+    complete -D -E -F _autocompletesh -o nospace
 }
 
 disable_command() {
