@@ -389,26 +389,26 @@ _autocompletesh() {
 
         # Clear the text to be autocompleted
         local input_length=${#user_input}
-        # tput cub $input_length
+        tput cub $input_length
 
         # Clear the full line to the left and to the right
         # tput el1; tput el
 
-        # local search_length=13
-        # local padding=$((input_length - search_length))
+        local search_length=13
+        local padding=$((input_length - search_length))
         # Show the "Searching ..." text
-        # echo_searching $padding
+        echo_searching $padding
     
         # Call the language model
         local completions=$(openai_completion "$user_input" || true)
 
         # Revert display back to the original text
-        # tput el
-        # if [[ $padding -gt 0 ]]; then
-        #     tput cub $padding
-        # fi
-        # tput cub $search_length
-        # echo -en $current
+        tput el
+        if [[ $padding -gt 0 ]]; then
+            tput cub $padding
+        fi
+        tput cub $search_length
+        echo -en $COMP_LINE
         
         # If OpenAI API returns completions, use them
         if [[ -n "$completions" ]]; then
