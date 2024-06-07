@@ -415,18 +415,21 @@ _autocompletesh() {
 
             # write $completions to a file for debugging
             echo "$completions" > /tmp/autocomplete_completions.txt
-            # find and replace all : in $completions with an escaped version
-            completions=$(echo "$completions" | sed 's/:/\\:/g')
 
-            # num_rows=$(echo "$completions" | wc -l)
+            # local completions=$(echo "$completions" | head -n 1)
+            num_rows=$(echo "$completions" | wc -l)
+
             COMPREPLY=()
-            # if [[ $num_rows -eq 1 ]]; then    
-            #     local first_line=$(echo -n "$completions" | head -n 1)
-            #     readarray -t COMPREPLY <<< "$(echo -n "$first_line" | sed "s/$command[[:space:]]*//")"
-            # else
-            #     readarray -t COMPREPLY <<< "$(echo "$completions")"
-            # fi
-            readarray -t COMPREPLY <<< "$(echo "$completions")"
+            if [[ $num_rows -eq 1 ]]; then    
+                # remove the leading command if it is present
+                # find and replace all : in $completions with an escaped version
+                readarray -t COMPREPLY <<< "$(echo -n "$completions" | sed "s/$command[[:space:]]*//" | sed 's/:/\\:/g')"
+            else
+                # Add a counter to the completions
+                completions=$(echo "$completions" | awk '{print NR". "$0}')
+                readarray -t COMPREPLY <<< "$(echo "$completions")"
+            fi
+            
         fi
         # If the completions are empty, fall back to $current
         if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
