@@ -31,8 +31,9 @@ echo_green() {
 echo_searching() {
     local padding=${1:-0}
     echo -en "\033[32;5mSearching\033[0m \033[32m..."
+    local padding=${1:-0}
     if [[ $padding -gt 0 ]]; then
-        for i in $(seq 1 $padding); do
+        for _ in $(seq 1 "$padding"); do
             echo -n "."
         done
     fi
@@ -67,7 +68,8 @@ _get_terminal_info() {
 
 # Generate a unique machine signature based on the hash of the uname and user
 machine_signature() {
-    local signature=$(echo "$(uname -a)|$$USER" | md5sum | cut -d ' ' -f 1)
+    local signature
+    signature=$(echo "$(uname -a)|$$USER" | md5sum | cut -d ' ' -f 1)
     echo "$signature"
 }
 
@@ -93,7 +95,7 @@ _completion_vars() {
     echo "COMP_POINT: ${COMP_POINT}"
     echo "COMP_TYPE: ${COMP_TYPE}"
     echo "COMP_WORDBREAKS: ${COMP_WORDBREAKS}"
-    echo "COMP_WORDS: ${COMP_WORDS[@]}"
+    echo "COMP_WORDS: ${COMP_WORDS[*]}"
 }
 
 
@@ -122,7 +124,7 @@ The output must not contain any backticks or quotes such as \`command\` or \"com
 _get_output_instructions() {
     echo "Provide a list of suggested completions or commands that could be run in the terminal.
 YOU MUST provide a list of two to five possible completions or rewritten commands here 
-DO NOT wrap the commands in backticks or quotes such as \`command\` or "command" or ```command``` 
+DO NOT wrap the commands in backticks or quotes such as \`command\` or \"command\" or \`\`\`command\`\`\` 
 Each must be a valid command or set of commands somehow chained together that could be run in the terminal
 Please focus on the user's intent, recent commands, and the current environment when brainstorming completions.
 Take a deep breath. You got this!
@@ -133,22 +135,25 @@ RETURN A JSON OBJECT WITH THE COMPLETIONS"
 # GOTCHA: The history only populate if you run the command in the same terminal.  If you run it 
 # in a ./autocomplete_api.sh, it will not be populated since that runs in a different environment
 _get_command_history() {
-    local HISTORY_LIMIT=${1:-20}
-    echo "$(history | tail -n $HISTORY_LIMIT)"
+    local HISTORY_LIMIT
+    HISTORY_LIMIT=${1:-20}
+    history | tail -n "$HISTORY_LIMIT"
 }
 
 _get_recent_files() {
-    local FILE_LIMIT=${1:-20}
-    echo "$(ls -lt | head -n $FILE_LIMIT)"
+    local FILE_LIMIT
+    FILE_LIMIT=${1:-20}
+    find . -maxdepth 1 -type f -exec ls -ld {} + | sort -r | head -n "$FILE_LIMIT"
 }
 
 # Attempts to get the help message for a given command
 _get_help_message() {
     # Extract the first word from the user input
-    local COMMAND=$(echo "$1" | awk '{print $1}')
+    local COMMAND HELP_INFO
+    COMMAND=$(echo "$1" | awk '{print $1}')
 
     # Attempt to capture the help information
-    local HELP_INFO=""
+    HELP_INFO=""
     {
         set +e
         HELP_INFO=$(cat <<EOF
@@ -165,18 +170,18 @@ EOF
 # Constructs a LLM prompt with the user input and in-terminal contextual information
 _build_prompt() {
     # Define contextual information for the completion request
-    
-    local user_input="$@"
-    local command_history=$(_get_command_history)
-    local terminal_context=$(_get_terminal_info)
-    local help_message=$(_get_help_message "$user_input")
-    local recent_files=$(_get_recent_files)
-    local output_instructions=$(_get_output_instructions)
+    local user_input command_history terminal_context help_message recent_files output_instructions other_environment_variables prompt
+    user_input="$*"
+    command_history=$(_get_command_history 20)
+    terminal_context=$(_get_terminal_info)
+    help_message=$(_get_help_message "$user_input")
+    recent_files=$(_get_recent_files 20)
+    output_instructions=$(_get_output_instructions)
 
     # compgen lists environmental variables without the 
-    local other_environment_variables=$(compgen -v | grep -v 'PWD|OSTYPE|BASH|USER|HOME|TERM|OLDPWD|HOSTNAME')
+    other_environment_variables=$(compgen -v | grep -v 'PWD|OSTYPE|BASH|USER|HOME|TERM|OLDPWD|HOSTNAME')
     
-    local prompt="User command: \`$user_input\`
+    prompt="User command: \`$user_input\`
 
 # Terminal Context
 ## Environment variables
@@ -211,14 +216,19 @@ $output_instructions
 
 # Constructs the payload for the OpenAI API request
 _build_payload() {
-    local user_input="$1"
-    local prompt=$(_build_prompt "$@")
+    local user_input prompt system_message_prompt payload acsh_prompt
+    user_input="$1"
+    prompt=$(_build_prompt "$@")
+    system_message_prompt=$(_get_system_message_prompt)
 
-    echo "$prompt" > /tmp/autocomplete_prompt.txt
+    # EXPORT PROMPT TO #ACSH_PROMPT
+    acsh_prompt="# SYSTEM PROMPT\n"
+    acsh_prompt+=$system_message_prompt
+    acsh_prompt+="\n# USER MESSAGE\n"
+    acsh_prompt+=$prompt
+    export ACSH_PROMPT=$acsh_prompt
 
-    local system_message_prompt=$(_get_system_message_prompt)
-
-    local payload=$(jq -cn --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
+    payload=$(jq -cn --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
         model: "gpt-4o",
         messages: [
             {role: "system", content: $system_prompt},
@@ -256,37 +266,39 @@ _build_payload() {
 
 
 openai_completion() {
-    local default_user_input="Write two to six most likely commands given the provided information"
-    local user_input=${@:-$default_user_input}
+    local content status_code response_body default_user_input user_input api_key config_file payload response completions
+    
+    default_user_input="Write two to six most likely commands given the provided information"
+    user_input=${*:-$default_user_input}
 
     # Ensure the API key is set
     if [[ -n "$OPENAI_API_KEY" ]]; then
-        local api_key="$OPENAI_API_KEY"
+        api_key="$OPENAI_API_KEY"
     else
-        local config_file="$HOME/.autocomplete-sh"
+        config_file="$HOME/.autocomplete-sh"
         if [[ -f "$config_file" ]]; then
-            local api_key=$(awk '/api_key:/ {print $2}' "$config_file")
+            api_key=$(awk '/api_key:/ {print $2}' "$config_file")
         else
             echo_error "Please set the OPENAI_API_KEY environment variable or create a ~/.autocomplete-sh YAML configuration file with the 'api_key' field."
             return
         fi
     fi
-    local payload=$(_build_payload "$user_input")
+    payload=$(_build_payload "$user_input")
     # Add 5 second timeout to the curl command
-    local response=$(\curl -s -m 30 -w "%{http_code}" https://api.openai.com/v1/chat/completions \
+    response=$(\curl -s -m 30 -w "%{http_code}" https://api.openai.com/v1/chat/completions \
   -H "Content-Type: application/json" \
   -H "Authorization: Bearer $api_key" \
   -d "$payload")
 
     echo "$response" > /tmp/autocomplete_response.txt
-    local status_code=$(echo "$response" | tail -n1)
-    local response_body=$(echo "$response" | sed '$d')
+    status_code=$(echo "$response" | tail -n1)
+    response_body=$(echo "$response" | sed '$d')
     if [[ $status_code -eq 200 ]]; then
-        local content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
+        content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
         content=$(echo "$content" | jq -r '.commands')
 
         # Map the commands to a list of completions and remove empty lines
-        local completions=$(echo "$content" | jq -r '.[]' | grep -v '^$')
+        completions=$(echo "$content" | jq -r '.[]' | grep -v '^$')
 
         # TODO is this -n or no?
         echo -n "$completions"
@@ -331,9 +343,10 @@ _default_completion() {
     # Check if COMP_WORDS is empty
     local current_word=""
     local first_word=""
+    local default_func
 
     # Check it COMP_WORDS IS NOT EMPTY
-    if [[ -n "${COMP_WORDS[@]}" ]]; then
+    if [[ -n "${COMP_WORDS[*]}" ]]; then
         first_word="${COMP_WORDS[0]}"
         # Check if COMP_CWORD is defined and is valid for COMP_WORDS
         if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
@@ -342,7 +355,7 @@ _default_completion() {
     fi
 
     # Get the default completion function for the command
-    local default_func=$(_get_default_completion_function "$first_word")
+    default_func=$(_get_default_completion_function "$first_word")
 
     # If a default completion function exists, call it
     if [[ -n "$default_func" ]]; then
@@ -357,19 +370,21 @@ _default_completion() {
             file_completions=$(compgen -f -- "$current_word" || true)
         fi
         if [[ -n "$file_completions" ]]; then
-            readarray -t COMPREPLY <<< $(echo "$file_completions")
+            readarray -t COMPREPLY <<< "$file_completions"
         fi
     fi
 }
 
 _autocompletesh() {
 
+    # defines prev and cur
+    _init_completion || return
     # _completion_vars
-    local current=""
-    local first_word=""
+    # local current=""
+    # local first_word=""
 
     # Check it COMP_WORDS IS NOT EMPTY
-    if [[ -n "${COMP_WORDS[@]}" ]]; then
+    if [[ -n "${COMP_WORDS[*]}" ]]; then
         command="${COMP_WORDS[0]}"
         # Check if COMP_CWORD is defined and is valid for COMP_WORDS
         if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
@@ -384,59 +399,54 @@ _autocompletesh() {
 
     # If COMPREPLY is not empty, use it; otherwise, use OpenAI API completions
     if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+        local completions
+        local user_input
         # Prepare input for the language model API
-        local user_input="${COMP_LINE-"$command $current"}"
+        user_input="${COMP_LINE-"$command $current"}"
 
-        # Clear the text to be autocompleted
-        local input_length=${#user_input}
-        tput cub $input_length
+        # Set and clear
+        export ACSH_INPUT=$user_input
+        export ACSH_PROMPT=
+        export ACSH_RESPONSE=
 
-        # Clear the full line to the left and to the right
-        # tput el1; tput el
-
-        local search_length=13
-        local padding=$((input_length - search_length))
-        # Show the "Searching ..." text
-        echo_searching $padding
+        # Advance to the next line
+        echo
+        echo_searching 0
     
         # Call the language model
-        local completions=$(openai_completion "$user_input" || true)
-
-        # Revert display back to the original text
-        tput el
-        if [[ $padding -gt 0 ]]; then
-            tput cub $padding
-        fi
-        tput cub $search_length
-        echo -en $COMP_LINE
         
+        completions=$(openai_completion "$user_input" || true)
+        export ACSH_RESPONSE=$completions
+
         # If OpenAI API returns completions, use them
         if [[ -n "$completions" ]]; then
+            # Clear the full line to the left and to the right
+            tput el1;
+            echo_green "autocomplete.sh - suggestions"
 
             # write $completions to a file for debugging
             echo "$completions" > /tmp/autocomplete_completions.txt
 
-            # local completions=$(echo "$completions" | head -n 1)
             num_rows=$(echo "$completions" | wc -l)
-
             COMPREPLY=()
             if [[ $num_rows -eq 1 ]]; then    
                 # remove the leading command if it is present
                 # find and replace all : in $completions with an escaped version
-                readarray -t COMPREPLY <<< "$(echo -n "$completions" | sed "s/$command[[:space:]]*//" | sed 's/:/\\:/g')"
+                readarray -t COMPREPLY <<< "$(echo -n "${completions}" | sed "s/${command}[[:space:]]*//" | sed 's/:/\\:/g')"
             else
                 # Add a counter to the completions
                 completions=$(echo "$completions" | awk '{print NR". "$0}')
-                readarray -t COMPREPLY <<< "$(echo "$completions")"
+                readarray -t COMPREPLY <<< echo "$completions"
             fi
-            
+        else
+            # TODO RETRY
+            tput el1
         fi
         # If the completions are empty, fall back to $current
         if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
             COMPREPLY=("$current")
         fi
     fi
-    # declare -p COMPREPLY
 }
 
 
@@ -474,7 +484,8 @@ show_help() {
 }
 
 show_config() {
-    local is_enabled=$(check_if_enabled)
+    local is_enabled config_file
+    is_enabled=$(check_if_enabled)
     echo "autocomplete.sh - LLM Powered Bash Completion"
     echo 
     if [ "$is_enabled" ]; then 
@@ -484,7 +495,7 @@ show_config() {
         # echo disabled in red
         echo -e "  STATUS: \e[31mDisabled\e[0m"
     fi
-    local config_file="$HOME/.autocomplete/config"
+    config_file="$HOME/.autocomplete/config"
     if [ ! -f "$config_file" ]; then
         echo_error "Configuration file not found: $config_file"
         echo_error "Run autocomplete install"
@@ -493,7 +504,7 @@ show_config() {
 }
 
 config_command() {
-    local command="${@:2}"
+    local command="${*:2}"
 
     if [ -z "$command" ]; then
         echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
@@ -524,14 +535,16 @@ remove_command() {
 
 check_if_enabled() {
     # run complete -p | grep _autocompletesh and if it returns a value, it is enabled
-    local enabled=$(complete -p | grep _autocompletesh)
-    if [ "$enabled" ]; then
+    local is_enabled
+    is_enabled=$(complete -p | grep _autocompletesh)
+    if [ "$is_enabled" ]; then
         echo "enabled"
     fi
 }
 
 enable_command() {
-    local is_enabled=$(check_if_enabled)
+    local is_enabled
+    is_enabled=$(check_if_enabled)
     if [ "$is_enabled" ]; then
         echo_green "autocomplete.sh - reloading"
         disable_command
@@ -543,7 +556,8 @@ enable_command() {
 
 disable_command() {
     # Remove the completion function by installing the default completion function
-    local is_enabled=$(check_if_enabled)
+    local is_enabled
+    is_enabled=$(check_if_enabled)
     if [ "$is_enabled" ]; then
         complete -F _completion_loader -D
     fi
@@ -553,11 +567,11 @@ command_command() {
     
     for arg in "$@"; do
         if [ "$arg" == "--dry-run" ]; then
-            echo "$(_build_prompt "${@:2}")"
+            _build_prompt "${@:2}"
             return
         fi
     done
-    echo "$(openai_completion "$@" || true)"
+    openai_completion "$@" || true
 }
 
 case "$1" in
