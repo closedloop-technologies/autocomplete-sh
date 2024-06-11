@@ -386,10 +386,11 @@ _autocompletesh() {
 	# TODO If COMP_TYPE != 9, then what should we do?
 
 	# Attempt to get default completions first
-	# _default_completion
+	_default_completion
 
 	# If COMPREPLY is not empty, use it; otherwise, use OpenAI API completions
-	if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
+	if [[ ${#COMPREPLY[@]} -eq 0 &&  $COMP_TYPE -eq 63 ]]; then
+
 		local completions
 		local user_input
 		# Prepare input for the language model API
@@ -401,8 +402,11 @@ _autocompletesh() {
 		export ACSH_RESPONSE=
 
 		# Advance to the next line
-		echo
-		echo_searching 0
+        # change the color of the blinking cursor
+        # tput civis
+        echo -en "\e]12;green\a"
+		# echo -n "Searching"
+		# echo_searching 0
 
 		# Call the language model
 
@@ -412,8 +416,10 @@ _autocompletesh() {
 		# If OpenAI API returns completions, use them
 		if [[ -n "$completions" ]]; then
 			# Clear the full line to the left and to the right
-			tput el1
-			echo_green "autocomplete.sh - suggestions"
+			# tput el1
+            # move the cursor to the beginning of the line
+            # tput cr
+			# echo_green "autocomplete.sh - suggestions"
 
 			# write $completions to a file for debugging
 			echo "$completions" >/tmp/autocomplete_completions.txt
@@ -427,7 +433,7 @@ _autocompletesh() {
 			else
 				# Add a counter to the completions
 				completions=$(echo "$completions" | awk '{print NR". "$0}')
-				readarray -t COMPREPLY "$completions" <<<echo
+				readarray -t COMPREPLY <<< "$completions"
 			fi
 		else
 			# TODO RETRY
@@ -438,6 +444,7 @@ _autocompletesh() {
 			COMPREPLY=("$current")
 		fi
 	fi
+    echo -en "\e]12;white\a"
 }
 
 ###############################################################################
