@@ -4,4 +4,4 @@ repos:
     rev: v0.10.0
     hooks:
     -   id: shellcheck
-        files: ^autocomplete\.sh$
+        files: ^.+\.sh$
