@@ -393,9 +393,11 @@ _autocompletesh() {
 
 		local completions
 		local user_input
+        local user_input_hash
 
 		# Prepare input for the language model API
 		user_input="${COMP_LINE-"$command $current"}"
+        user_input_hash=$(echo -n "$user_input" | md5sum | cut -d ' ' -f 1)
 
 		# Set and clear
 		export ACSH_INPUT=$user_input
@@ -404,15 +406,23 @@ _autocompletesh() {
 
 		# Advance to the next line
         # change the color of the blinking cursor
-        echo -en "\e]12;green\a"
-		completions=$(openai_completion "$user_input" || true)
-        # If Completions is empty, fall back to the current word
-        if [[ -z "$completions" ]]; then
-            echo -en "\e]12;red\a"
-            sleep 1
-    		completions=$(openai_completion "$user_input" || true)
+
+        # Check if user_input_hash is in the cache
+        if [[ -f "/tmp/autocomplete_cache/$user_input_hash" ]]; then
+            completions=$(cat "/tmp/autocomplete_cache/$user_input_hash")
+        else
+            # CALL API
+            echo -en "\e]12;green\a"
+            completions=$(openai_completion "$user_input" || true)
+            # If Completions is empty, fall back to the current word
+            if [[ -z "$completions" ]]; then
+                echo -en "\e]12;red\a"
+                sleep 1
+                completions=$(openai_completion "$user_input" || true)
+            fi
+            echo -en "\e]12;white\a"
+            echo "$completions" > "/tmp/autocomplete_cache/$user_input_hash"
         fi
-        echo -en "\e]12;white\a"
 		export ACSH_RESPONSE=$completions
 
 
@@ -516,6 +526,11 @@ config_command() {
 
 install_command() {
 	echo "install_command"
+
+    # Create /tmp/autocomplete_cache if it does not exist
+    if [[ ! -d "/tmp/autocomplete_cache" ]]; then
+        mkdir -p "/tmp/autocomplete_cache"
+    fi
 }
 
 remove_command() {
