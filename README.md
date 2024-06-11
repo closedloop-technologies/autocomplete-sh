@@ -60,3 +60,18 @@ Governance will be re-evaluated as the project evolves.
 ## License
 
 See the [LICENSE](./LICENSE) file for details.
+
+
+## Development
+
+
+
+Pre Commit Hooks
+
+    pip install pre-commit
+    pre-commit install
+
+Tests
+
+    sudo apt install bats
+    bats tests
