@@ -393,6 +393,7 @@ _autocompletesh() {
 
 		local completions
 		local user_input
+
 		# Prepare input for the language model API
 		user_input="${COMP_LINE-"$command $current"}"
 
@@ -403,24 +404,20 @@ _autocompletesh() {
 
 		# Advance to the next line
         # change the color of the blinking cursor
-        # tput civis
         echo -en "\e]12;green\a"
-		# echo -n "Searching"
-		# echo_searching 0
-
-		# Call the language model
-
 		completions=$(openai_completion "$user_input" || true)
+        # If Completions is empty, fall back to the current word
+        if [[ -z "$completions" ]]; then
+            echo -en "\e]12;red\a"
+            sleep 1
+    		completions=$(openai_completion "$user_input" || true)
+        fi
+        echo -en "\e]12;white\a"
 		export ACSH_RESPONSE=$completions
+
 
 		# If OpenAI API returns completions, use them
 		if [[ -n "$completions" ]]; then
-			# Clear the full line to the left and to the right
-			# tput el1
-            # move the cursor to the beginning of the line
-            # tput cr
-			# echo_green "autocomplete.sh - suggestions"
-
 			# write $completions to a file for debugging
 			echo "$completions" >/tmp/autocomplete_completions.txt
 
@@ -435,16 +432,12 @@ _autocompletesh() {
 				completions=$(echo "$completions" | awk '{print NR". "$0}')
 				readarray -t COMPREPLY <<< "$completions"
 			fi
-		else
-			# TODO RETRY
-			tput el1
 		fi
 		# If the completions are empty, fall back to $current
 		if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
 			COMPREPLY=("$current")
 		fi
 	fi
-    echo -en "\e]12;white\a"
 }
 
 ###############################################################################
