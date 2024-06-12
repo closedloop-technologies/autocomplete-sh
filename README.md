@@ -4,8 +4,6 @@ LLM autocomplete commands in the terminal!  Less `--help` and `man` and more get
 
 It should run only when the default completion returns no results.
 
-- Fix multiple suggestions
-- have it work with prefix #
 - install to .bashrc and remove it
 - read from config
 - package and distribute it
@@ -27,7 +25,7 @@ It should run only when the default completion returns no results.
 
 ### Nice to Haves
 
-- [ ] Caching
+- [x] Caching
 - [ ] Support for other shells
 - [ ] Support for custom language models
 - [ ] previous command outputs and errors
