@@ -506,7 +506,7 @@ or disable autocomplete via \e[0mautocomplete disable\e[31m"
 show_help() {
 	echo_green "Autocomplete.sh - LLM Powered Bash Completion"
 	echo "Usage: autocomplete [options] command"
-	echo "       autocomplete [options] install|remove|info|config|enable|disable|command|--help"
+	echo "       autocomplete [options] install|remove|config|enable|disable|clear|usage|system|command|--help"
 	echo
 	echo "autocomplete.sh is a script to enhance bash completion with LLM capabilities."
 	echo
@@ -517,14 +517,14 @@ show_help() {
 	echo "Most used commands:"
 	echo "  install             Install the autocomplete script from .bashrc"
 	echo "  remove              Remove the autocomplete script from .bashrc"
-	echo "  info                Displays status and config values"
-	echo "  system              Displays system information"
+  echo "  config              Displays status and config values"
 	echo "  config set <key> <value>  Set a configuration value"
-	echo "  config reset        Resets to default configuration file"
+	echo "  config reset        Reset configuration to default values"
 	echo "  enable              Enable the autocomplete script"
 	echo "  disable             Disable the autocomplete script"
-    echo "  clear               Clear the cache directory and log file"
-    echo "  usage               Display usage information including cost"
+  echo "  clear               Clear the cache directory and log file"
+  echo "  usage               Display usage information including cost"
+  echo "  system              Displays system information"
 	echo "  command             Run the autocomplete command same a pressing <tab><tab>"
 	echo "  command --dry-run   Only show the prompt without running the command"
 	echo
@@ -600,8 +600,8 @@ config_command() {
 	command="${*:2}"
 
 	if [ -z "$command" ]; then
-		echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
-		return
+		show_config
+        return
 	fi
 	# If command is set, show the configuration value
 	# command should be in the format `set <key> <value>`
@@ -946,16 +946,23 @@ usage_command() {
 
     cache_size=$(list_cache | wc -l)
 
-    number_of_lines=$(wc -l < "$log_file")
-    api_cost=$(awk -F, '{sum += $5} END {print sum}' "$log_file")
-    avg_api_cost=$(echo "$api_cost / $number_of_lines" | bc -l)
-
     echo_green "Autocomplete.sh - Usage Information"
     echo
     echo -n "Log file: "
     echo -en "\e[90m"
     echo "$log_file"
     echo -en "\e[0m"
+
+    # If log_file does not exist, return
+    if [ ! -f "$log_file" ]; then
+        number_of_lines=0
+        api_cost=0
+        avg_api_cost=0
+    else
+        number_of_lines=$(wc -l < "$log_file")
+        api_cost=$(awk -F, '{sum += $5} END {print sum}' "$log_file")
+        avg_api_cost=$(echo "$api_cost / $number_of_lines" | bc -l)
+    fi
 
     echo
     echo -e "API Calls:\t"
@@ -997,9 +1004,6 @@ usage_command() {
 case "$1" in
 "--help")
 	show_help
-	;;
-info)
-	show_config
 	;;
 system)
 	_system_info

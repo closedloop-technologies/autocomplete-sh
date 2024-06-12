@@ -4,6 +4,13 @@ LLM autocomplete commands in the terminal!
 
 Less `--help`, `man` and searching, more getting stuff done.
 
+## Installation
+
+```bash
+wget -qO- https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/main/install.sh | bash
+```
+
+
 It should run only when the default completion returns no results.
 
 - install to .bashrc and remove it
