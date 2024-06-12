@@ -435,10 +435,6 @@ or disable autocomplete via \e[0mautocomplete disable\e[31m"
 		user_input="${COMP_LINE-"$command $current"}"
         user_input_hash=$(echo -n "$user_input" | md5sum | cut -d ' ' -f 1)
 
-        if [[ "$user_input" == "# explain" ]]; then
-            echo "Explain the current command"
-            return
-        fi
 		# Set and clear
 		export ACSH_INPUT="$user_input"
 		export ACSH_PROMPT=
@@ -524,6 +520,7 @@ show_help() {
 	echo "  info                Displays status and config values"
 	echo "  system              Displays system information"
 	echo "  config set <key> <value>  Set a configuration value"
+	echo "  config reset        Resets to default configuration file"
 	echo "  enable              Enable the autocomplete script"
 	echo "  disable             Disable the autocomplete script"
     echo "  clear               Clear the cache directory and log file"
@@ -643,7 +640,7 @@ config_command() {
         build_config
         return
     fi
-	echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
+	echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\ or autocomplete config reset\`"
 }
 
 build_config() {
@@ -728,12 +725,16 @@ install_command() {
     bashrc_file="$HOME/.bashrc"
     autocomplete_setup="source autocomplete enable"
 
+
     # Confirm that autocomplete exists and is in the path
-#     if ! command -v autocomplete &>/dev/null; then
-#         echo_error "autocomplete.sh is not in the PATH
-# Please follow the install instructions on https://github.com/closedloop-technologies/autocomplete-sh"
-#         return
-#     fi
+    if ! command -v autocomplete &>/dev/null; then
+        echo_error "autocomplete.sh is not in the PATH
+Please follow the install instructions on https://github.com/closedloop-technologies/autocomplete-sh"
+        return
+    fi
+
+    # Set the autocomplete function
+    complete -F _autocompletesh_cli autocomplete
 
     # Create the ~/.autocomplete directory if it does not exist
     if [[ ! -d "$HOME/.autocomplete" ]]; then
@@ -832,6 +833,39 @@ check_if_enabled() {
 	if [ "$is_enabled" ]; then
 		echo "enabled"
 	fi
+}
+
+_autocompletesh_cli() {
+
+    if [[ -n "${COMP_WORDS[*]}" ]]; then
+        command="${COMP_WORDS[0]}"
+        # Check if COMP_CWORD is defined and is valid for COMP_WORDS
+        if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
+            current="${COMP_WORDS[COMP_CWORD]}"
+        fi
+    fi
+    if [[ $current == "config" ]]; then
+        readarray -t COMPREPLY <<< "set
+reset"
+        return
+    elif [[ $current == "command" ]]; then
+        readarray -t COMPREPLY <<< "command --dry-run"
+        return
+    fi
+    if [[ -z "$current" ]]; then
+        readarray -t COMPREPLY <<< "install
+remove
+info
+system
+config
+enable
+disable
+clear
+usage
+command
+--help" 
+    fi
+
 }
 
 enable_command() {
