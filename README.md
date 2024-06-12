@@ -1,6 +1,8 @@
 # autocomplete-sh
 
-LLM autocomplete commands in the terminal!  Less `--help` and `man` and more getting stuff done.
+LLM autocomplete commands in the terminal!  
+
+Less `--help`, `man` and searching, more getting stuff done.
 
 ## Installation
 
@@ -16,12 +18,31 @@ It should run only when the default completion returns no results.
 - package and distribute it
 - set up github pages to show the README
 
+## Usage
+
+```bash
+autocomplete --help
+```
+
+### Example
+
+```bash
+ffmpeg "make a video from images"<TAB><TAB>
+```
+
+```bash
+! "run the last command"<TAB><TAB>
+```
+
+```bash
+
+
 ## Core Tasks
 
 - [x] It should call a language model to generate the completion
-- [ ] It should install a bash completion script for all commands
-- [ ] It should have a configuration file to specify the language model and API key
-- [ ] A CLI to manage the configuration file and install / uninstall the bash completion script
+- [x] It should install a bash completion script for all commands
+- [x] It should have a configuration file to specify the language model and API key
+- [x] A CLI to manage the configuration file and install / uninstall the bash completion script
 
 ### Context should include
 
@@ -43,8 +64,9 @@ It should run only when the default completion returns no results.
 ```
 
 # The script should be placed in
-/usr/bin/autocomplete # if apt-get install autocomplete
 /usr/local/bin/autocomplete # if installed manually
+<!-- /usr/bin/autocomplete # if apt-get install autocomplete -->
+
 
 # Configuration Files
 ~/.autocomplete/config
@@ -80,3 +102,15 @@ Tests
 
     sudo apt install bats
     bats tests
+
+# Tests to run
+- [ ] install             Install the autocomplete script from .bashrc
+- [ ] remove              Remove the autocomplete script from .bashrc
+- [ ] info                Displays status and config values
+- [ ] system              Displays system information
+- [ ] config set <key> <value>  Set a configuration value
+- [ ] enable              Enable the autocomplete script
+- [ ] disable             Disable the autocomplete script
+- [ ] command             Run the autocomplete command
+- [ ] command --dry-run   Only show the prompt without running the command
+- [ ] command --explain   Show the explanation for the command
