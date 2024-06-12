@@ -912,16 +912,23 @@ usage_command() {
 
     cache_size=$(list_cache | wc -l)
 
-    number_of_lines=$(wc -l < "$log_file")
-    api_cost=$(awk -F, '{sum += $5} END {print sum}' "$log_file")
-    avg_api_cost=$(echo "$api_cost / $number_of_lines" | bc -l)
-
     echo_green "Autocomplete.sh - Usage Information"
     echo
     echo -n "Log file: "
     echo -en "\e[90m"
     echo "$log_file"
     echo -en "\e[0m"
+
+    # If log_file does not exist, return
+    if [ ! -f "$log_file" ]; then
+        number_of_lines=0
+        api_cost=0
+        avg_api_cost=0
+    else
+        number_of_lines=$(wc -l < "$log_file")
+        api_cost=$(awk -F, '{sum += $5} END {print sum}' "$log_file")
+        avg_api_cost=$(echo "$api_cost / $number_of_lines" | bc -l)
+    fi
 
     echo
     echo -e "API Calls:\t"
