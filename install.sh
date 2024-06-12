@@ -7,7 +7,7 @@
 # Run the script to install the LLMs
 
 # The URL of the latest version of the LLMs
-URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v0.1.0/autocomplete.sh"
+URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v0.2.1/autocomplete.sh"
 
 # The location to install the LLMs
 INSTALL_LOCATION="$HOME/.local/bin/autocomplete"
