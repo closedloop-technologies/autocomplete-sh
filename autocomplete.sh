@@ -21,7 +21,7 @@
 ###############################################################################
 
 echo_error() {
-	echo -e "\n\e[31mautocomplete.sh - $1\e[0m" >&2
+	echo -e "\e[31mautocomplete.sh - $1\e[0m" >&2
 }
 
 echo_green() {
@@ -131,13 +131,13 @@ RETURN A JSON OBJECT WITH THE COMPLETIONS"
 # in a ./autocomplete_api.sh, it will not be populated since that runs in a different environment
 _get_command_history() {
 	local HISTORY_LIMIT
-	HISTORY_LIMIT=${1:-20}
+    HISTORY_LIMIT=${ACSH_MAX_HISTORY_COMMANDS:-20}
 	history | tail -n "$HISTORY_LIMIT"
 }
 
 _get_recent_files() {
 	local FILE_LIMIT
-	FILE_LIMIT=${1:-20}
+    FILE_LIMIT=${ACSH_MAX_RECENT_FILES:-20}
 	find . -maxdepth 1 -type f -exec ls -ld {} + | sort -r | head -n "$FILE_LIMIT"
 }
 
@@ -166,10 +166,10 @@ _build_prompt() {
 	# Define contextual information for the completion request
 	local user_input command_history terminal_context help_message recent_files output_instructions other_environment_variables prompt
 	user_input="$*"
-	command_history=$(_get_command_history 20)
+	command_history=$(_get_command_history)
 	terminal_context=$(_get_terminal_info)
 	help_message=$(_get_help_message "$user_input")
-	recent_files=$(_get_recent_files 20)
+	recent_files=$(_get_recent_files)
 	output_instructions=$(_get_output_instructions)
 
 	# compgen lists environmental variables without the
@@ -211,6 +211,10 @@ $output_instructions
 # Constructs the payload for the OpenAI API request
 _build_payload() {
 	local user_input prompt system_message_prompt payload acsh_prompt
+    local model temperature
+    model=${ACSH_MODEL:-"gpt-4o"}
+    temperature=${ACSH_TEMPERATURE:-0.0}
+
 	user_input="$1"
 	prompt=$(_build_prompt "$@")
 	system_message_prompt=$(_get_system_message_prompt)
@@ -222,13 +226,13 @@ _build_payload() {
 	acsh_prompt+=$prompt
 	export ACSH_PROMPT=$acsh_prompt
 
-	payload=$(jq -cn --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
-        model: "gpt-4o",
+	payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
+        model: "$model",
         messages: [
             {role: "system", content: $system_prompt},
             {role: "user", content: $prompt_content}
         ],
-        temperature: 0.0,
+        temperature: $temperature,
         response_format: { "type": "json_object" },
         tool_choice: {"type": "function", "function": {"name": "bash_completions"}},
         tools:[
@@ -254,36 +258,37 @@ _build_payload() {
         }
     ]
     }')
-	echo "$payload" >/tmp/autocomplete_payload.txt
+	# echo "$payload" >/tmp/autocomplete_payload.txt
 	echo "$payload"
 }
 
 openai_completion() {
 	local content status_code response_body default_user_input user_input api_key config_file payload response completions
+    local endpoint api_key timeout
+    
+    #  Settings
+    endpoint=${ACSH_ENDPOINT:-"https://api.openai.com/v1/chat/completions"}
+    timeout=${ACSH_TIMEOUT:-30}
 
+    # Inputs and Defaults
 	default_user_input="Write two to six most likely commands given the provided information"
 	user_input=${*:-$default_user_input}
 
-	# Ensure the API key is set
-	if [[ -n "$OPENAI_API_KEY" ]]; then
-		api_key="$OPENAI_API_KEY"
-	else
-		config_file="$HOME/.autocomplete-sh"
-		if [[ -f "$config_file" ]]; then
-			api_key=$(awk '/api_key:/ {print $2}' "$config_file")
-		else
-			echo_error "Please set the OPENAI_API_KEY environment variable or create a ~/.autocomplete-sh YAML configuration file with the 'api_key' field."
-			return
-		fi
-	fi
+    # First check if the ACSH_API_KEY is set else check if the OPENAI_API_KEY is set
+    api_key="$ACSH_API_KEY:-$OPENAI_API_KEY"
+	if [[ -z "$api_key" ]]; then
+        echo_error "Please set the ACSH_API_KEY environment variable or set api_key in ~/.autocomplete/config"
+        return
+    fi
 	payload=$(_build_payload "$user_input")
-	# Add 5 second timeout to the curl command
-	response=$(\curl -s -m 30 -w "%{http_code}" https://api.openai.com/v1/chat/completions \
+	
+    # Add 30 second timeout to the curl command
+	response=$(\curl -s -m "$timeout" -w "%{http_code}" "$endpoint" \
 		-H "Content-Type: application/json" \
 		-H "Authorization: Bearer $api_key" \
 		-d "$payload")
 
-	echo "$response" >/tmp/autocomplete_response.txt
+	# echo "$response" >/tmp/autocomplete_response.txt
 	status_code=$(echo "$response" | tail -n1)
 	response_body=$(echo "$response" | sed '$d')
 	if [[ $status_code -eq 200 ]]; then
@@ -395,6 +400,8 @@ _autocompletesh() {
 		local user_input
         local user_input_hash
 
+        load_config
+
 		# Prepare input for the language model API
 		user_input="${COMP_LINE-"$command $current"}"
         user_input_hash=$(echo -n "$user_input" | md5sum | cut -d ' ' -f 1)
@@ -407,9 +414,20 @@ _autocompletesh() {
 		# Advance to the next line
         # change the color of the blinking cursor
 
+        ### 
+
+        # ACSH_CACHE_DIR: ~/.autocomplete/cache
+        # cache_dir is ACSH_CACHE_DIR or default "$HOME/.autocomplete/cache"
+        local cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
+        local cache_size=${ACSH_CACHE_SIZE:-100}
+
+        # ACSH_LOG_FILE:  ~/.autocomplete/autocomplete.log
+        # ACSH_LOG_LEVEL: info
+        
         # Check if user_input_hash is in the cache
-        if [[ -f "/tmp/autocomplete_cache/$user_input_hash" ]]; then
-            completions=$(cat "/tmp/autocomplete_cache/$user_input_hash")
+        if [[ -f "$cache_dir/$user_input_hash" ]]; then
+            completions=$(cat "$cache_dir/$user_input_hash")
+            touch "$cache_dir/$user_input_hash"
         else
             # CALL API
             echo -en "\e]12;green\a"
@@ -421,15 +439,19 @@ _autocompletesh() {
                 completions=$(openai_completion "$user_input" || true)
             fi
             echo -en "\e]12;white\a"
-            echo "$completions" > "/tmp/autocomplete_cache/$user_input_hash"
+            echo "$completions" > "$cache_dir/$user_input_hash"
+
+            # If the cache size is greater than the cache size, remove the oldest file
+            if [[ "$cache_size" -gt 0 && $(find "$cache_dir" -maxdepth 1 -type f | wc -l) -gt "$cache_size" ]]; then
+                rm -f "$(find "$cache_dir" -maxdepth 1 -type f -printf '%T+ %p\n' | sort | head -n 1 | cut -d ' ' -f 2-)"
+            fi
         fi
 		export ACSH_RESPONSE=$completions
-
 
 		# If OpenAI API returns completions, use them
 		if [[ -n "$completions" ]]; then
 			# write $completions to a file for debugging
-			echo "$completions" >/tmp/autocomplete_completions.txt
+			# echo "$completions" >/tmp/autocomplete_completions.txt
 
 			num_rows=$(echo "$completions" | wc -l)
 			COMPREPLY=()
@@ -500,6 +522,16 @@ show_config() {
 		echo_error "Run autocomplete install"
 		return
 	fi
+    load_config
+
+    # For each key in the configuration file, print the key and value
+    echo 
+    echo "Configuration:"
+    echo
+    for config_var in $(compgen -v | grep ACSH_); do
+        # make the value grey
+        echo -e "\t$config_var:\t\e[90m${!config_var}\e[0m"
+    done
 }
 
 config_command() {
@@ -524,17 +556,180 @@ config_command() {
 	echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
 }
 
-install_command() {
-	echo "install_command"
+build_config() {
+    local config_file default_config api_key
+    config_file="$HOME/.autocomplete/config"
+    
+    if [ ! -f "$config_file" ]; then
+        echo "Creating the ~/.autocomplete/config file with default values"
+        
+        if [ -n "$OPENAI_API_KEY" ]; then
+            api_key="$OPENAI_API_KEY"
+        else
+            api_key=""
+        fi
+        
+        default_config="# ~/.autocomplete/config
 
-    # Create /tmp/autocomplete_cache if it does not exist
-    if [[ ! -d "/tmp/autocomplete_cache" ]]; then
-        mkdir -p "/tmp/autocomplete_cache"
+# OpenAI API Key
+# You can set this here or as an environment variable named OPENAI_API_KEY
+api_key: $api_key
+
+# Model configuration
+model: gpt-4o
+temperature: 0.0
+endpoint: https://api.openai.com/v1/chat/completions
+
+# Number of completion suggestions to generate
+num_completions: 4
+
+# Max number of history commands and recent files to include in the prompt
+max_history_commands: 20
+max_recent_files: 20
+
+# Cache settings
+cache_dir: ~/.autocomplete/cache
+cache_size: 100
+
+# Logging settings
+log_level: info
+log_file: ~/.autocomplete/autocomplete.log"
+
+        echo "$default_config" > "$config_file"
     fi
 }
 
+load_config() {
+    local config_file
+
+    config_file="$HOME/.autocomplete/config"
+
+    if [ -f "$config_file" ]; then
+        # Read the config file line by line
+        while IFS=':' read -r key value; do
+            # Skip comments and empty lines
+            if [[ $key == \#* ]] || [[ -z $key ]]; then
+                continue
+            fi
+
+            # Remove leading/trailing whitespace from key and value
+            key=$(echo "$key" | tr -d '[:space:]')
+            value=$(echo "$value" | tr -d '[:space:]')
+
+            # Convert the key to uppercase and replace non-alphanumeric characters with underscores
+            key=${key^^}
+            key=${key//[^[:alnum:]]/_}
+
+            # Set the variable dynamically if it's not api_key or if api_key is not empty
+            if [[ $key != "api_key" ]] || [[ -n $value ]]; then
+                export "ACSH_$key"="$value"
+            fi
+        done < "$config_file"
+    else
+        echo "Configuration file not found: $config_file"
+    fi
+}
+
+install_command() {
+    local bashrc_file autocomplete_setup
+
+    bashrc_file="$HOME/.bashrc"
+    autocomplete_setup="source autocomplete enable"
+
+    # Confirm that autocomplete exists and is in the path
+    if ! command -v autocomplete &>/dev/null; then
+        echo_error "autocomplete.sh is not in the PATH
+Please follow the install instructions on https://github.com/closedloop-technologies/autocomplete-sh"
+        return
+    fi
+
+    # Create the ~/.autocomplete directory if it does not exist
+    if [[ ! -d "$HOME/.autocomplete" ]]; then
+        echo "Creating the ~/.autocomplete directory"
+        mkdir -p "$HOME/.autocomplete"
+    fi
+
+    # If OPENAI_API_KEY is not set, prompt the user to set it
+    if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
+        echo_error "OPENAI_API_KEY is not set
+Please set it using the following command: \e[0mexport OPENAI_API_KEY=<your-api-key>\e[31m
+or set it in the ~/.autocomplete-sh configuration file via \e[0mautocomplete config set OPENAI_API_KEY <your-api-key>\e[31m"
+    fi
+
+    # Create $HOME/.autocomplete/cache/ if it does not exist
+    local cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
+    if [[ ! -d "$cache_dir" ]]; then
+        mkdir -p "$cache_dir"
+    fi
+
+    # $HOME/.autocomplete/config
+    build_config
+
+    # Append autocomplete.sh setup to .bashrc if it doesn't exist
+    if ! grep -qF "$autocomplete_setup" "$bashrc_file"; then
+        echo -e "# Autocomplete.sh" >> "$bashrc_file"
+        echo -e "$autocomplete_setup\n" >> "$bashrc_file"
+        echo "Added autocomplete.sh setup to $bashrc_file"
+    else
+        echo "Autocomplete.sh setup already exists in $bashrc_file"
+    fi
+
+    echo "Completed removing autocomplete.sh"
+}
+
 remove_command() {
-	echo "remove_command"
+    local config_file cache_dir log_file bashrc_file
+
+    config_file="$HOME/.autocomplete/config"
+    cache_dir="$HOME/.autocomplete/cache"
+    log_file="$HOME/.autocomplete/autocomplete.log"
+    bashrc_file="$HOME/.bashrc"
+
+    echo_green "autocomplete.sh - Removing files, directories, and bashrc setup..."
+
+    # Remove the configuration file
+    if [ -f "$config_file" ]; then
+        rm "$config_file"
+        echo "Removed: $config_file"
+    fi
+
+    # Remove the cache directory and its contents
+    if [ -d "$cache_dir" ]; then
+        rm -rf "$cache_dir"
+        echo "Removed: $cache_dir"
+    fi
+
+    # Remove the log file
+    if [ -f "$log_file" ]; then
+        rm "$log_file"
+        echo "Removed: $log_file"
+    fi
+
+    # Remove the ~/.autocomplete directory if it is empty
+    if [ -d "$HOME/.autocomplete" ]; then
+        if [ -z "$(ls -A "$HOME/.autocomplete")" ]; then
+            rmdir "$HOME/.autocomplete"
+            echo "Removed: $HOME/.autocomplete"
+        else
+            echo "Skipped removing $HOME/.autocomplete (directory not empty)"
+        fi
+    fi
+
+    # Remove the autocomplete.sh setup line from .bashrc
+    if [ -f "$bashrc_file" ]; then
+        if grep -qF "source autocomplete enable" "$bashrc_file"; then
+            
+            # remove lines that start with # Autocomplete.sh
+            sed -i '/# Autocomplete.sh/d' "$bashrc_file"
+
+            # remove lines that contain source autocomplete enable
+            sed -i '/autocomplete/d' "$bashrc_file"
+
+            echo "Removed autocomplete.sh setup from $bashrc_file"
+        fi
+    fi
+
+    echo "Completed installing autocomplete.sh"
 }
 
 check_if_enabled() {
