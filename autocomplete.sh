@@ -1,15 +1,10 @@
 #!/bin/bash
 
-# autocomplete.sh - LLM Powered Bash Completion
-# acsh
+# Autocomplete.sh - LLM Powered Bash Completion
+
 # This script provides bash completion suggestions using the OpenAI API.
 # MIT License - ClosedLoop Technologies, Inc.
 # Sean Kruzel 2024
-
-## TODO
-# autocompletecli_completion()
-# Install via curl like https://github.com/nvm-sh/nvm/tree/master
-# tests coverage via https://github.com/nvm-sh/nvm/tree/master
 
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
@@ -21,7 +16,7 @@
 ###############################################################################
 
 echo_error() {
-	echo -e "\e[31mautocomplete.sh - $1\e[0m" >&2
+	echo -e "\e[31mAutocomplete.sh - $1\e[0m" >&2
 }
 
 echo_green() {
@@ -173,7 +168,7 @@ _build_prompt() {
 	output_instructions=$(_get_output_instructions)
 
 	# compgen lists environmental variables without the
-	other_environment_variables=$(compgen -v | grep -v 'PWD|OSTYPE|BASH|USER|HOME|TERM|OLDPWD|HOSTNAME')
+    other_environment_variables=$(env | grep '=' | grep -v 'ACSH_' | awk -F= '{print $1}' | grep -v 'PWD|OSTYPE|BASH|USER|HOME|TERM|OLDPWD|HOSTNAME')
 
 	prompt="User command: \`$user_input\`
 
@@ -212,7 +207,7 @@ $output_instructions
 _build_payload() {
 	local user_input prompt system_message_prompt payload acsh_prompt
     local model temperature
-    model=${ACSH_MODEL:-"gpt-4o"}
+    model="${ACSH_MODEL:-"gpt-4o"}"
     temperature=${ACSH_TEMPERATURE:-0.0}
 
 	user_input="$1"
@@ -227,12 +222,12 @@ _build_payload() {
 	export ACSH_PROMPT=$acsh_prompt
 
 	payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
-        model: "$model",
+        model: $model,
         messages: [
             {role: "system", content: $system_prompt},
             {role: "user", content: $prompt_content}
         ],
-        temperature: $temperature,
+        temperature: ($temperature | tonumber),
         response_format: { "type": "json_object" },
         tool_choice: {"type": "function", "function": {"name": "bash_completions"}},
         tools:[
@@ -258,14 +253,36 @@ _build_payload() {
         }
     ]
     }')
-	# echo "$payload" >/tmp/autocomplete_payload.txt
 	echo "$payload"
 }
 
-openai_completion() {
-	local content status_code response_body default_user_input user_input api_key config_file payload response completions
-    local endpoint api_key timeout
+log_request() {
+    local user_input response_body user_input_hash log_file
+    local prompt_tokens prompt_tokens_int completion_tokens completion_tokens_int created api_cost
+
+    user_input="$1"
+    response_body="$2"
+
+    user_input_hash=$(echo -n "$user_input" | md5sum | cut -d ' ' -f 1)
+
+    prompt_tokens=$(echo "$response_body" | jq -r '.usage.prompt_tokens')
+    prompt_tokens_int=$((prompt_tokens))
+    completion_tokens=$(echo "$response_body" | jq -r '.usage.completion_tokens')
+    completion_tokens_int=$((completion_tokens))
     
+    created=$(echo "$response_body" | jq -r '.created')
+    api_cost=$(echo "$prompt_tokens_int * $ACSH_API_PROMPT_COST + $completion_tokens_int * $ACSH_API_COMPLETION_COST" | bc)
+
+    # Log the response (request time, response time, prompt tokens, completion tokens, completion time, completion length, completion tokens per second, completion tokens per prompt token, completion tokens per second per prompt token, completion tokens per second per completion token)
+    log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"}
+    echo "$created,$user_input_hash,$prompt_tokens_int,$completion_tokens_int,$api_cost" >> "$log_file"
+}
+
+openai_completion() {
+	local content status_code response_body default_user_input user_input 
+    local api_key config_file payload response completions endpoint timeout
+    local prompt_tokens completion_tokens created api_cost prompt_tokens_int completion_tokens_int
+
     #  Settings
     endpoint=${ACSH_ENDPOINT:-"https://api.openai.com/v1/chat/completions"}
     timeout=${ACSH_TIMEOUT:-30}
@@ -275,20 +292,22 @@ openai_completion() {
 	user_input=${*:-$default_user_input}
 
     # First check if the ACSH_API_KEY is set else check if the OPENAI_API_KEY is set
-    api_key="$ACSH_API_KEY:-$OPENAI_API_KEY"
-	if [[ -z "$api_key" ]]; then
-        echo_error "Please set the ACSH_API_KEY environment variable or set api_key in ~/.autocomplete/config"
+    if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
+        echo ""
+        echo_error "ACSH_API_KEY or OPENAI_API_KEY is not set"
+        echo -e "Please set it using the following command: \e[90mexport OPENAI_API_KEY=<your-api-key>\e[0m"
+        echo -e "or set it in the ~/.autocomplete/config configuration file via: \e[90mautocomplete config set OPENAI_API_KEY <your-api-key>\e[0m"
         return
     fi
+    api_key="${ACSH_API_KEY:-$OPENAI_API_KEY}"
 	payload=$(_build_payload "$user_input")
-	
+
     # Add 30 second timeout to the curl command
 	response=$(\curl -s -m "$timeout" -w "%{http_code}" "$endpoint" \
 		-H "Content-Type: application/json" \
 		-H "Authorization: Bearer $api_key" \
 		-d "$payload")
 
-	# echo "$response" >/tmp/autocomplete_response.txt
 	status_code=$(echo "$response" | tail -n1)
 	response_body=$(echo "$response" | sed '$d')
 	if [[ $status_code -eq 200 ]]; then
@@ -297,11 +316,12 @@ openai_completion() {
 
 		# Map the commands to a list of completions and remove empty lines
 		completions=$(echo "$content" | jq -r '.[]' | grep -v '^$')
-
-		# TODO is this -n or no?
 		echo -n "$completions"
+
+        # Usage
+        log_request "$user_input" "$response_body"
 	else
-		# TODO RETRY once on unknown error or 429
+        echo
 		case $status_code in
 		400)
 			echo_error "Bad Request: The API request was invalid or malformed."
@@ -371,30 +391,22 @@ _default_completion() {
 	fi
 }
 
+list_cache() {
+    local cache_dir cache_files
+    cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
+    cache_files=$(find "$cache_dir" -maxdepth 1 -type f -name "acsh-*" -printf '%T+ %p\n' | sort)
+    echo "$cache_files"
+}
+
 _autocompletesh() {
 
 	# defines prev and cur
 	_init_completion || return
-	# _completion_vars
-	# local current=""
-	# local first_word=""
-
-	# Check it COMP_WORDS IS NOT EMPTY
-	if [[ -n "${COMP_WORDS[*]}" ]]; then
-		command="${COMP_WORDS[0]}"
-		# Check if COMP_CWORD is defined and is valid for COMP_WORDS
-		if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
-			current="${COMP_WORDS[COMP_CWORD]}"
-		fi
-	fi
-
-	# TODO If COMP_TYPE != 9, then what should we do?
 
 	# Attempt to get default completions first
 	_default_completion
 
-	# If COMPREPLY is not empty, use it; otherwise, use OpenAI API completions
-	if [[ ${#COMPREPLY[@]} -eq 0 &&  $COMP_TYPE -eq 63 ]]; then
+	if [[ ${#COMPREPLY[@]} -eq 0 && $COMP_TYPE -eq 63 ]]; then
 
 		local completions
 		local user_input
@@ -402,32 +414,49 @@ _autocompletesh() {
 
         load_config
 
+        # CHECK API KEY is set
+        if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
+            echo_error "OPENAI_API_KEY is not set
+Please set it using the following command: \e[0mexport OPENAI_API_KEY=<your-api-key>\e[31m
+or set it in the ~/.autocomplete/config configuration file via \e[0mautocomplete config set OPENAI_API_KEY <your-api-key>\e[31m
+or disable autocomplete via \e[0mautocomplete disable\e[31m"
+            echo
+            return
+        fi
+
 		# Prepare input for the language model API
+        if [[ -n "${COMP_WORDS[*]}" ]]; then
+            command="${COMP_WORDS[0]}"
+            # Check if COMP_CWORD is defined and is valid for COMP_WORDS
+            if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
+                current="${COMP_WORDS[COMP_CWORD]}"
+            fi
+        fi
 		user_input="${COMP_LINE-"$command $current"}"
         user_input_hash=$(echo -n "$user_input" | md5sum | cut -d ' ' -f 1)
 
+        if [[ "$user_input" == "# explain" ]]; then
+            echo "Explain the current command"
+            return
+        fi
 		# Set and clear
-		export ACSH_INPUT=$user_input
+		export ACSH_INPUT="$user_input"
 		export ACSH_PROMPT=
 		export ACSH_RESPONSE=
 
 		# Advance to the next line
         # change the color of the blinking cursor
 
-        ### 
-
         # ACSH_CACHE_DIR: ~/.autocomplete/cache
         # cache_dir is ACSH_CACHE_DIR or default "$HOME/.autocomplete/cache"
         local cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
         local cache_size=${ACSH_CACHE_SIZE:-100}
 
-        # ACSH_LOG_FILE:  ~/.autocomplete/autocomplete.log
-        # ACSH_LOG_LEVEL: info
-        
-        # Check if user_input_hash is in the cache
-        if [[ -f "$cache_dir/$user_input_hash" ]]; then
-            completions=$(cat "$cache_dir/$user_input_hash")
-            touch "$cache_dir/$user_input_hash"
+        # Check if user_input_hash is in the cache and cache is enabled
+        local cache_file="$cache_dir/acsh-$user_input_hash.txt"
+        if [[ -d "$cache_dir" && "$cache_size" -gt 0 && -f "$cache_file" ]]; then
+            completions=$(cat "$cache_file" || true)
+            touch "$cache_file"
         else
             # CALL API
             echo -en "\e]12;green\a"
@@ -439,20 +468,19 @@ _autocompletesh() {
                 completions=$(openai_completion "$user_input" || true)
             fi
             echo -en "\e]12;white\a"
-            echo "$completions" > "$cache_dir/$user_input_hash"
 
             # If the cache size is greater than the cache size, remove the oldest file
-            if [[ "$cache_size" -gt 0 && $(find "$cache_dir" -maxdepth 1 -type f | wc -l) -gt "$cache_size" ]]; then
-                rm -f "$(find "$cache_dir" -maxdepth 1 -type f -printf '%T+ %p\n' | sort | head -n 1 | cut -d ' ' -f 2-)"
+            if [[ -d "$cache_dir" && "$cache_size" -gt 0 ]]; then
+                echo "$completions" > "$cache_file"
+                if [[ $(list_cache | wc -l) -gt "$cache_size" ]]; then
+                    rm "$(list_cache | head -n 1 | cut -d ' ' -f 2-)" || true
+                fi
             fi
         fi
 		export ACSH_RESPONSE=$completions
 
 		# If OpenAI API returns completions, use them
 		if [[ -n "$completions" ]]; then
-			# write $completions to a file for debugging
-			# echo "$completions" >/tmp/autocomplete_completions.txt
-
 			num_rows=$(echo "$completions" | wc -l)
 			COMPREPLY=()
 			if [[ $num_rows -eq 1 ]]; then
@@ -460,7 +488,8 @@ _autocompletesh() {
 				# find and replace all : in $completions with an escaped version
 				readarray -t COMPREPLY <<<"$(echo -n "${completions}" | sed "s/${command}[[:space:]]*//" | sed 's/:/\\:/g')"
 			else
-				# Add a counter to the completions
+				# Add a counter to the completions so that autocomplete 
+                # can display them in the block format
 				completions=$(echo "$completions" | awk '{print NR". "$0}')
 				readarray -t COMPREPLY <<< "$completions"
 			fi
@@ -479,7 +508,7 @@ _autocompletesh() {
 ###############################################################################
 
 show_help() {
-	echo_green "autocomplete.sh - LLM Powered Bash Completion"
+	echo_green "Autocomplete.sh - LLM Powered Bash Completion"
 	echo "Usage: autocomplete [options] command"
 	echo "       autocomplete [options] install|remove|info|config|enable|disable|command|--help"
 	echo
@@ -497,7 +526,9 @@ show_help() {
 	echo "  config set <key> <value>  Set a configuration value"
 	echo "  enable              Enable the autocomplete script"
 	echo "  disable             Disable the autocomplete script"
-	echo "  command             Run the autocomplete command"
+    echo "  clear               Clear the cache directory and log file"
+    echo "  usage               Display usage information including cost"
+	echo "  command             Run the autocomplete command same a pressing <tab><tab>"
 	echo "  command --dry-run   Only show the prompt without running the command"
 	echo
 	echo "Submit bugs or feedback here: https://github.com/closedloop-technologies/autocomplete-sh/issues"
@@ -506,15 +537,16 @@ show_help() {
 
 show_config() {
 	local is_enabled config_file
+    local term_width bigwidth table_width
+
 	is_enabled=$(check_if_enabled)
-	echo "autocomplete.sh - LLM Powered Bash Completion"
-	echo
+	echo_green "Autocomplete.sh - Configuration and Settings"
 	if [ "$is_enabled" ]; then
 		# echo enabled in green
-		echo -e "  STATUS: \e[32mEnabled\e[0m"
+        echo -e "  STATUS: \033[32;5mEnabled\033[0m \033[0m"
 	else
 		# echo disabled in red
-		echo -e "  STATUS: \e[31mDisabled\e[0m"
+        echo -e "  STATUS: \033[31;5mDisabled\033[0m \033[0m"
 	fi
 	config_file="$HOME/.autocomplete/config"
 	if [ ! -f "$config_file" ]; then
@@ -523,19 +555,44 @@ show_config() {
 		return
 	fi
     load_config
-
-    # For each key in the configuration file, print the key and value
-    echo 
-    echo "Configuration:"
     echo
+    term_width=$(tput cols)
+    table_width=$((term_width - 40))
+    bigwidth=$((term_width - 26))
+
     for config_var in $(compgen -v | grep ACSH_); do
-        # make the value grey
+        
+        if [[ $config_var == "ACSH_INPUT" ]] || [[ $config_var == "ACSH_PROMPT" ]] || [[ $config_var == "ACSH_RESPONSE" ]]; then
+            continue
+        fi
+        
+        config_value=${!config_var}
+        echo -en "  $config_var:\e[90m"
+        if [[ ${#config_value} -lt $table_width ]]; then
+            printf '%s%*s' "" $((table_width - ${#config_var})) ''
+        else
+            printf '%s%*s' "" $((16 - ${#config_var})) ''
+        fi
         if [[ $config_var == "ACSH_API_KEY" ]]; then
             # show the first 2 characters of the api key and the last 4 characters
-            echo -e "\t$config_var:\t\e[90m${!config_var:0:4}...${!config_var: -4}\e[0m"
+            if [[ -z ${!config_var} ]]; then
+                echo -en "\e[31m"
+                printf "%${table_width}s" "UNSET"
+            else
+                printf "%${table_width}s" "${!config_var:0:4}...${!config_var: -4}"
+            fi
         else
-            echo -e "\t$config_var:\t\e[90m${!config_var}\e[0m"
+            # repeat spaces to align the values repeat 27 - length config_var 
+            
+            if [[ ${#config_value} -lt $table_width ]]; then
+                # replace below to make %10 = $table_width
+                # printf "%10s" "${!config_var}"
+                printf "%${table_width}s" "${!config_var}"
+            else
+                printf "%${bigwidth}s" "${!config_var}"
+            fi
         fi
+        echo -e "\e[0m"
     done
 }
 
@@ -584,6 +641,9 @@ api_key: $api_key
 model: gpt-4o
 temperature: 0.0
 endpoint: https://api.openai.com/v1/chat/completions
+# pricing from https://openai.com/api/pricing/
+api_prompt_cost: 0.000005
+api_completion_cost: 0.000015
 
 # Number of completion suggestions to generate
 num_completions: 4
@@ -593,12 +653,11 @@ max_history_commands: 20
 max_recent_files: 20
 
 # Cache settings
-cache_dir: ~/.autocomplete/cache
-cache_size: 100
+cache_dir: $HOME/.autocomplete/cache
+cache_size: 10
 
 # Logging settings
-log_level: info
-log_file: ~/.autocomplete/autocomplete.log"
+log_file: $HOME/.autocomplete/autocomplete.log"
 
         echo "$default_config" > "$config_file"
     fi
@@ -642,11 +701,11 @@ install_command() {
     autocomplete_setup="source autocomplete enable"
 
     # Confirm that autocomplete exists and is in the path
-    if ! command -v autocomplete &>/dev/null; then
-        echo_error "autocomplete.sh is not in the PATH
-Please follow the install instructions on https://github.com/closedloop-technologies/autocomplete-sh"
-        return
-    fi
+#     if ! command -v autocomplete &>/dev/null; then
+#         echo_error "autocomplete.sh is not in the PATH
+# Please follow the install instructions on https://github.com/closedloop-technologies/autocomplete-sh"
+#         return
+#     fi
 
     # Create the ~/.autocomplete directory if it does not exist
     if [[ ! -d "$HOME/.autocomplete" ]]; then
@@ -656,9 +715,10 @@ Please follow the install instructions on https://github.com/closedloop-technolo
 
     # If OPENAI_API_KEY is not set, prompt the user to set it
     if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
-        echo_error "OPENAI_API_KEY is not set
-Please set it using the following command: \e[0mexport OPENAI_API_KEY=<your-api-key>\e[31m
-or set it in the ~/.autocomplete-sh configuration file via \e[0mautocomplete config set OPENAI_API_KEY <your-api-key>\e[31m"
+        echo ""
+        echo_error "OPENAI_API_KEY is not set"
+        echo -e "Please set it using the following command: export OPENAI_API_KEY=<your-api-key>"
+        echo -e "or set it in the ~/.autocomplete/config configuration file via: autocomplete config set OPENAI_API_KEY <your-api-key>"
     fi
 
     # Create $HOME/.autocomplete/cache/ if it does not exist
@@ -686,11 +746,11 @@ remove_command() {
     local config_file cache_dir log_file bashrc_file
 
     config_file="$HOME/.autocomplete/config"
-    cache_dir="$HOME/.autocomplete/cache"
-    log_file="$HOME/.autocomplete/autocomplete.log"
+    cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
+    log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"}
     bashrc_file="$HOME/.bashrc"
 
-    echo_green "autocomplete.sh - Removing files, directories, and bashrc setup..."
+    echo_green "Autocomplete.sh - Removing files, directories, and bashrc setup..."
 
     # Remove the configuration file
     if [ -f "$config_file" ]; then
@@ -750,7 +810,7 @@ enable_command() {
 	local is_enabled
 	is_enabled=$(check_if_enabled)
 	if [ "$is_enabled" ]; then
-		echo_green "autocomplete.sh - reloading"
+		echo_green "Autocomplete.sh - reloading"
 		disable_command
 	fi
 	# Set as the default completion function (-D )
@@ -778,6 +838,100 @@ command_command() {
 	openai_completion "$@" || true
 }
 
+clear_command() {
+    # Clear the cache directory and log file
+    local cache_dir log_file
+    load_config
+    cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
+    log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"}
+
+    # Prompt user to confirm 
+    echo "This will remove the cache directory and log file"
+    # Make cache_dir show in red
+    echo -e "Cache dir:\t\e[31m$cache_dir\e[0m"
+    echo -e "Log file:\t\e[31m$log_file\e[0m"
+    read -r -p "Are you sure you want to continue? (y/n): " confirm
+    if [[ $confirm != "y" ]]; then
+        echo "Aborted"
+        return
+    fi
+    if [ -d "$cache_dir" ]; then
+        cache_files=$(list_cache)
+        echo "$cache_file"
+        if [ -n "$cache_files" ]; then
+            for last_update_and_filename in $cache_files; do
+                file=$(echo "$last_update_and_filename" | cut -d ' ' -f 2)
+                rm "$file"
+                echo "Removed: $file"
+            done
+            echo "Removed files in: $cache_dir"
+        else
+            echo "Cache directory is empty"
+        fi
+        
+        echo "Removed: $cache_dir"
+    fi
+    if [ -f "$log_file" ]; then
+        rm "$log_file"
+        echo "Removed: $log_file"
+    fi
+}
+
+usage_command() {
+    local log_file number_of_lines api_cost cache_dir
+    log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"}
+    cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
+
+    cache_size=$(list_cache | wc -l)
+
+    number_of_lines=$(wc -l < "$log_file")
+    api_cost=$(awk -F, '{sum += $5} END {print sum}' "$log_file")
+    avg_api_cost=$(echo "$api_cost / $number_of_lines" | bc -l)
+
+    echo_green "Autocomplete.sh - Usage Information"
+    echo
+    echo -n "Log file: "
+    echo -en "\e[90m"
+    echo "$log_file"
+    echo -en "\e[0m"
+
+    echo
+    echo -e "API Calls:\t"
+
+    # Date analysis
+    if [[ $number_of_lines -eq 0 ]]; then
+        echo_error "No usage data found"
+        return
+    else
+        earliest_date=$(awk -F, '{print $1}' "$log_file" | sort | head -n 1)
+        if [[ -n "$earliest_date" ]]; then
+            # format earliest_date to human readable date
+            earliest_date=$(date -d@"$earliest_date")
+            echo -en "\e[90m"
+            echo "Since $earliest_date"
+            echo -en "\e[0m"
+        fi
+    fi
+    echo
+    echo -en "\tUsage count:\t"
+    echo -en "\e[32m"
+    printf "%9s\n" "$number_of_lines"
+    echo -en "\e[0m"
+    echo -en "\tAvg Cost:\t$"
+    printf "%8.4f\n" "$avg_api_cost"
+    echo -e "\e[90m\t-------------------------\e[0m"
+    echo -en "\tTotal Cost:\t$"
+    echo -en "\e[31m"
+    printf "%8.4f\n" "$api_cost"
+    echo -en "\e[0m"
+    echo
+    echo
+    echo -n "Cache Size: ${cache_size} of ${ACSH_CACHE_SIZE:-10} in "
+    echo -e "\e[90m$cache_dir\e[0m"
+    echo
+    echo -e "To clear the log file and cache directory, run: \e[90mautocomplete clear\e[0m"
+}
+
 case "$1" in
 "--help")
 	show_help
@@ -794,6 +948,12 @@ install)
 remove)
 	remove_command
 	;;
+clear)
+	clear_command
+	;;
+usage)
+    usage_command
+    ;;
 config)
 	config_command "$@"
 	;;
