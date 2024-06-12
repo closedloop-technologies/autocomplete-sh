@@ -634,7 +634,7 @@ config_command() {
 
         # display the new value by loading the config
         load_config
-        echo_green "Configuration updated: run \`autocomplete info\` to see the changes"
+        echo_green "Configuration updated: run \`autocomplete config\` to see the changes"
 		return
 	fi
     if [[ "$command" == "reset" ]]; then
@@ -667,9 +667,6 @@ endpoint: https://api.openai.com/v1/chat/completions
 # pricing from https://openai.com/api/pricing/
 api_prompt_cost: 0.000005
 api_completion_cost: 0.000015
-
-# Number of completion suggestions to generate
-num_completions: 4
 
 # Max number of history commands and recent files to include in the prompt
 max_history_commands: 20
