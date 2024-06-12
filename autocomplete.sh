@@ -597,7 +597,10 @@ show_config() {
 }
 
 config_command() {
-	local command="${*:2}"
+    local key value command config_file
+    
+    config_file="$HOME/.autocomplete/config"
+	command="${*:2}"
 
 	if [ -z "$command" ]; then
 		echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
@@ -606,15 +609,40 @@ config_command() {
 	# If command is set, show the configuration value
 	# command should be in the format `set <key> <value>`
 	if [ "$2" == "set" ]; then
-		local key="$3"
-		local value="$4"
+        
+		key="$3"
+		value="$4"
+        key=${key,,}  # Convert to lowercase
+        key=${key//[^a-zA-Z0-9]/_}  # Replace non-alphanumeric characters with _
 		if [ -z "$key" ]; then
 			echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
 			return
 		fi
-		echo "Setting configuration key \`$key\` to value \`$value\`"
+        
+        load_config
+        if [ ! -f "$config_file" ]; then
+            echo_error "Configuration file not found: $config_file"
+            echo_error "Run autocomplete install"
+            return
+        fi
+        
+		echo -e "Setting configuration key \`$key\` to value \`$value\`"
+
+        # find the key in the config file and replace it with the new value
+        sed -i "s/\(^$key:\).*/\1 $value/" "$config_file"
+
+        # display the new value by loading the config
+        load_config
+        echo_green "Configuration updated: run \`autocomplete info\` to see the changes"
 		return
 	fi
+    if [[ "$command" == "reset" ]]; then
+        echo "Resetting configuration to default values"
+        # remove the config file if it exists
+        rm "$config_file" || true
+        build_config
+        return
+    fi
 	echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
 }
 
@@ -664,7 +692,7 @@ log_file: $HOME/.autocomplete/autocomplete.log"
 }
 
 load_config() {
-    local config_file
+    local config_file key value
 
     config_file="$HOME/.autocomplete/config"
 
