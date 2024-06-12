@@ -9,6 +9,8 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
+export ACSH_VERSION=0.2.2
+
 ###############################################################################
 #
 # FORMATTING FUNCTIONS
@@ -537,7 +539,7 @@ show_config() {
     local term_width bigwidth table_width
 
 	is_enabled=$(check_if_enabled)
-	echo_green "Autocomplete.sh - Configuration and Settings"
+	echo_green "Autocomplete.sh - Configuration and Settings - Version $ACSH_VERSION"
 	if [ "$is_enabled" ]; then
 		# echo enabled in green
         echo -e "  STATUS: \033[32;5mEnabled\033[0m \033[0m"
