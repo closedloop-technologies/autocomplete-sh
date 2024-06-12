@@ -530,7 +530,12 @@ show_config() {
     echo
     for config_var in $(compgen -v | grep ACSH_); do
         # make the value grey
-        echo -e "\t$config_var:\t\e[90m${!config_var}\e[0m"
+        if [[ $config_var == "ACSH_API_KEY" ]]; then
+            # show the first 2 characters of the api key and the last 4 characters
+            echo -e "\t$config_var:\t\e[90m${!config_var:0:4}...${!config_var: -4}\e[0m"
+        else
+            echo -e "\t$config_var:\t\e[90m${!config_var}\e[0m"
+        fi
     done
 }
 
