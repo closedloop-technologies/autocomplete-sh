@@ -576,7 +576,9 @@ show_config() {
                 echo -en "\e[31m"
                 printf "%${table_width}s" "UNSET"
             else
-                printf "%${table_width}s" "${!config_var:0:4}...${!config_var: -4}"
+                local rest
+                rest=${!config_var:4}
+                printf "%${table_width}s" "${!config_var:0:4}...${rest:-4}"
             fi
         else
             # repeat spaces to align the values repeat 27 - length config_var 
@@ -649,13 +651,7 @@ build_config() {
     
     if [ ! -f "$config_file" ]; then
         echo "Creating the ~/.autocomplete/config file with default values"
-        
-        if [ -n "$OPENAI_API_KEY" ]; then
-            api_key="$OPENAI_API_KEY"
-        else
-            api_key=""
-        fi
-        
+        api_key="${ACSH_API_KEY:-$OPENAI_API_KEY}"
         default_config="# ~/.autocomplete/config
 
 # OpenAI API Key
@@ -720,11 +716,11 @@ load_config() {
 }
 
 install_command() {
-    local bashrc_file autocomplete_setup
+    local bashrc_file autocomplete_setup autocomplete_cli_setup
 
     bashrc_file="$HOME/.bashrc"
     autocomplete_setup="source autocomplete enable"
-
+    autocomplete_cli_setup="complete -F _autocompletesh_cli autocomplete"
 
     # Confirm that autocomplete exists and is in the path
     if ! command -v autocomplete &>/dev/null; then
@@ -732,9 +728,6 @@ install_command() {
 Please follow the install instructions on https://github.com/closedloop-technologies/autocomplete-sh"
         return
     fi
-
-    # Set the autocomplete function
-    complete -F _autocompletesh_cli autocomplete
 
     # Create the ~/.autocomplete directory if it does not exist
     if [[ ! -d "$HOME/.autocomplete" ]]; then
@@ -744,10 +737,21 @@ Please follow the install instructions on https://github.com/closedloop-technolo
 
     # If OPENAI_API_KEY is not set, prompt the user to set it
     if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
-        echo ""
-        echo_error "OPENAI_API_KEY is not set"
-        echo -e "Please set it using the following command: export OPENAI_API_KEY=<your-api-key>"
-        echo -e "or set it in the ~/.autocomplete/config configuration file via: autocomplete config set OPENAI_API_KEY <your-api-key>"
+        # PROMPT USER TO enter API KEY
+        echo_green "Autocomplete.sh - Installation"
+        echo "To install autocomplete.sh, you need an OpenAI API Key"
+        echo "This is stored locally in the ~/.autocomplete/config file"
+        echo "Create a new one here: https://platform.openai.com/settings/profile?tab=api-keys"
+        read -r -p "Enter your OpenAI API Key: " user_api_key_input
+        if [[ -z "$user_api_key_input" ]]; then
+            echo_error "API Key not set"
+            echo -e "Please set it later using the following command: export OPENAI_API_KEY=<your-api-key>"
+            echo -e "or set it in the ~/.autocomplete/config configuration file via: autocomplete config set api_key <your-api-key>"
+        else
+            export ACSH_API_KEY="$user_api_key_input"
+        fi       
+    else
+        echo_green "OpenAPI key is loaded from the environment variable" 
     fi
 
     # Create $HOME/.autocomplete/cache/ if it does not exist
@@ -768,7 +772,13 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         echo "Autocomplete.sh setup already exists in $bashrc_file"
     fi
 
-    echo "Completed removing autocomplete.sh"
+    # Append Generic autocomplete
+    if ! grep -qF "$autocomplete_cli_setup" "$bashrc_file"; then
+        echo -e "# Autocomplete.sh CLI" >> "$bashrc_file"
+        echo -e "$autocomplete_cli_setup\n" >> "$bashrc_file"
+        echo "Added autocomplete cli autocomplete to $bashrc_file"
+    fi
+    echo "Completed installing autocomplete.sh"
 }
 
 remove_command() {
@@ -823,7 +833,7 @@ remove_command() {
         fi
     fi
 
-    echo "Completed installing autocomplete.sh"
+    echo "Completed uninstalling autocomplete.sh"
 }
 
 check_if_enabled() {
@@ -855,13 +865,12 @@ reset"
     if [[ -z "$current" ]]; then
         readarray -t COMPREPLY <<< "install
 remove
-info
-system
 config
 enable
 disable
 clear
 usage
+system
 command
 --help" 
     fi
