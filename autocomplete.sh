@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.2.2
+export ACSH_VERSION=0.2.3
 
 ###############################################################################
 #
@@ -23,18 +23,6 @@ echo_error() {
 
 echo_green() {
 	echo -e "\e[32m$1\e[0m"
-}
-
-echo_searching() {
-	local padding=${1:-0}
-	echo -en "\033[32;5mSearching\033[0m \033[32m..."
-	local padding=${1:-0}
-	if [[ $padding -gt 0 ]]; then
-		for _ in $(seq 1 "$padding"); do
-			echo -n "."
-		done
-	fi
-	echo -en "\033[0m"
 }
 
 ###############################################################################
@@ -898,14 +886,16 @@ disable_command() {
 }
 
 command_command() {
-
-	for arg in "$@"; do
-		if [ "$arg" == "--dry-run" ]; then
-			_build_prompt "${@:2}"
-			return
-		fi
-	done
+    local args=("$@") # Convert positional parameters to an array
+    for ((i = 0; i < ${#args[@]}; i++)); do
+        if [ "${args[i]}" == "--dry-run" ]; then
+            args[i]="" # Remove --dry-run by setting it to an empty string
+            _build_prompt "${args[@]}"
+            return
+        fi
+    done
 	openai_completion "$@" || true
+    echo
 }
 
 clear_command() {

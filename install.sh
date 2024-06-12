@@ -7,7 +7,7 @@
 # Run the script to install the LLMs
 
 # The URL of the latest version of the LLMs
-ACSH_VERSION="0.2.2"
+ACSH_VERSION="0.2.3"
 URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v${ACSH_VERSION}/autocomplete.sh"
 
 # The location to install the LLMs
