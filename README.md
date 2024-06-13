@@ -9,7 +9,7 @@ Autocomplete.sh
 ## Installation
 
 ```bash
-wget -qO- https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/main/install.sh | bash
+wget -qO- https://autocomplete.sh/install.sh | bash
 ```
 
 ## How it works
