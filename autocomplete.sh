@@ -738,8 +738,9 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         echo "To install autocomplete.sh, you need an OpenAI API Key"
         echo "This is stored locally in the ~/.autocomplete/config file"
         echo "Create a new one here: https://platform.openai.com/settings/profile?tab=api-keys"
-        
-        read -spr "Enter OpenAI API Key: " user_api_key_input < /dev/tty
+                
+        echo -n "Enter OpenAI API Key: "
+        read -sr user_api_key_input < /dev/tty
         echo
 
         if [[ -z "$user_api_key_input" ]]; then
