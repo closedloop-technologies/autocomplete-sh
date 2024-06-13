@@ -648,7 +648,8 @@ build_config() {
 # You can set this here or as an environment variable named OPENAI_API_KEY
 api_key: $api_key
 
-# Model configuration
+# Model configuration 
+## Model List https://platform.openai.com/docs/models
 model: gpt-4o
 temperature: 0.0
 endpoint: https://api.openai.com/v1/chat/completions

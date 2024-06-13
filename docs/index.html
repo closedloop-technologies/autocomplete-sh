@@ -1,17 +1,129 @@
-<html>
-	<body>
-		<h1>Autocomplete.sh</h1>
-		<div>
-			LLM Autocomplete in your terminal
+Sure, here's the complete HTML document with all sections from the README:
 
-			<pre>
-			wget -qO- https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/main/install.sh | bash
-			</pre>
-		</div>
-		<div>
-			READ MORE:
-			<a href="https://github.com/closedloop-technologies/autocomplete-sh">GitHub Repo</a>
-		</div>
-	</body>
+```html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Autocomplete.sh</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+</head>
+<body class="bg-gray-100">
+    <div class="container mx-auto px-4 py-8">
+        <h1 class="text-4xl font-bold mb-8">Autocomplete.sh</h1>
+
+        <h2 class="text-2xl font-bold mb-4">--help less, accomplish more: Command your terminal</h2>
+        
+        <p class="mb-8">`autocomplete` adds intelligent command-line suggestions for you directly in the terminal. Just type <kbd>Tab</kbd><kbd>Tab</kbd> and it calls an LLM (OpenAI by default) and returns the top suggestions for you.</p>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Installation</h3>
+            <pre><code class="language-bash">wget -qO- https://autocomplete.sh//install.sh | bash</code></pre>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">How it works</h3>
+            <p><strong>It's faster</strong> than copy-pasting from Stack Overflow and ChatGPT.</p>
+            <p>The suggestions are <strong>more accurate</strong> since we've engineered the prompts to contain limited information of your terminal's state including:</p>
+            <ul class="list-disc ml-6 mb-4">
+                <li>What kind of machine you are using: <code>$USER, $PWD, $OLDPWD, $HOME, $OSTYPE, $BASH, $TERM, $HOSTNAME</code></li>
+                <li><code>env</code> - Which variables are defined (but just the names and not the values)</li>
+                <li><code>history</code> - Recently executed commands</li>
+                <li><code>ls</code> - Recently modified files in the current directory</li>
+                <li><code>--help</code> - any additional help information for the current command</li>
+            </ul>
+            <p>If you are curious, you can see the full prompt using</p>
+            <pre><code class="language-bash">autocomplete command --dry-run "anything you want here"</code></pre>
+            <p><a href="https://github.com/closedloop-technologies/autocomplete-sh/pulls">Pull Requests</a> are welcome if you want to make it better!</p>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Configuration</h3>
+            <pre><code class="language-bash">autocomplete config</code></pre>
+            <p>Configurations can be changed with</p>
+            <pre><code class="language-bash">autocomplete config set &lt;key&gt; &lt;value&gt;</code></pre>
+            <p>For example <code>autocomplete config set api_key sk-p...</code> will update your API key.</p>
+            <pre><code class="language-bash">autocomplete config reset</code></pre>
+            <p>will restore config to the default values</p>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Tracking Usage</h3>
+            <pre><code class="language-bash">autocomplete usage</code></pre>
+            <p>The average cost for me is about half a penny per request using the latest gpt-4-omni model. For a lower cost model run the following commands:</p>
+            <pre><code class="language-bash">autocomplete config set model gpt-3.5-turbo
+autocomplete config set prompt_cost 0.0000005
+autocomplete config set completion_cost 0.0000015</code></pre>
+            <p>Then from now on it will log the calls correctly</p>
+            <p>As always <code>--help</code> will get you more</p>
+            <pre><code class="language-bash">autocomplete --help</code></pre>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Use Cases</h3>
+            <p><strong>Data Engineer:</strong> Quickly manipulate datasets in the terminal to efficiently complete data transformations and move on to analysis or further processing.</p>
+            <pre><code class="language-bash">ls
+awk -F',' '{print $1}' data.csv | grep 'keyword'
+spark-submit --master yarn my_script.py --input data.csv --output results/
+python -c "import pandas as pd; df1 = pd.read_csv('data1.csv'); df2 = pd.read_csv('data2.csv'); merged_df = pd.merge(df1, df2, on='key_column'); merged_df.to_csv('merged_data.csv', index=False)"</code></pre>
+
+            <p><strong>Backend Developer:</strong> Swiftly deploy updates and focus on improving your codebase.</p>
+            <pre><code class="language-bash">git init
+gcc -o output_file input_file.c
+pytest tests/
+docker build -t my_image .
+docker run -d -p 8080:80 my_image</code></pre>
+
+            <p><strong>Linux User:</strong> Effortlessly navigate and control your system for seamless administration.</p>
+            <pre><code class="language-bash">top
+sudo apt install package_name
+chmod 755 script.sh
+sudo systemctl start service_name</code></pre>
+
+            <p><strong>Terminal Novice:</strong> Build confidence and proficiency with every command.</p>
+           
+
+ <pre><code class="language-bash">cd path/to/directory
+touch new_file.txt
+cp file.txt destination/
+cat file.txt</code></pre>
+
+            <p><strong>Efficiency Seeker:</strong> Streamline tasks and reclaim valuable time for what matters most.</p>
+            <pre><code class="language-bash">sed -i 's/old_text/new_text/g' *.txt
+tar -czvf archive.tar.gz directory/
+tar -xzvf archive.tar.gz
+cat file.txt | grep 'keyword' | wc -l</code></pre>
+
+            <p><strong>Documentation Seeker:</strong> Resolve issues and understand commands with ease.</p>
+            <pre><code class="language-bash">man command_name
+apropos keyword
+help
+dpkg -l | grep package_name</code></pre>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Inspiration</h3>
+            <ul>
+                <li><a href="https://github.com/nvm-sh/nvm/tree/master">NVM</a></li>
+                <li><a href="https://github.com/di-sukharev/opencommit">OpenCommit</a></li>
+                <li><a href="https://omakub.org/">Omakub</a></li>
+            </ul>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Maintainers</h3>
+            <p>Currently maintained by Sean Kruzel <a href="https://github.com/closedloop">@closedloop</a> as a member of <a href="https://Closedloop.tech">Closedloop.tech</a></p>
+            <p>More maintainers and bug fixers are quite welcome, and we hope to grow the community around this project. Governance will be re-evaluated as the project evolves.</p>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">License</h3>
+            <p>See the <a href="./LICENSE">LICENSE</a> file for details.</p>
+        </div>
+    </div>
+</body>
 </html>
+```
 
+This HTML document replicates all sections of the README.md and applies Tailwind CSS styles for a visually appealing layout. Feel free to further customize it as needed.

@@ -1,8 +1,10 @@
-# autocomplete-sh
+Autocomplete.sh
+========================================================
+## `--help` less, accomplish more: Command your terminal
 
-LLM autocomplete commands in the terminal!  
+`autocomplete` adds intelligent command-line suggestions  for you directly in the terminal.  Just type <TAB><TAB> and it calls an LLM (OpenAI by default) and returns the top suggestions for you.
 
-Less `--help`, `man` and searching, more getting stuff done.
+< Insert Small GIF cursor turning green and outputing >
 
 ## Installation
 
@@ -10,72 +12,132 @@ Less `--help`, `man` and searching, more getting stuff done.
 wget -qO- https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/main/install.sh | bash
 ```
 
+## How it works
 
-It should run only when the default completion returns no results.
+< Insert GIF of Usecases >
 
-- install to .bashrc and remove it
-- read from config
-- package and distribute it
-- set up github pages to show the README
+It's **faster** than copy-pasting from Stack Overflow and ChatGPT.  
 
-## Usage
+The suggestions are **more accurate** since we've engineered the prompts to contain limited information of your terminal's state including:
+ * What kind of machine you are using: `$USER, $PWD, $OLDPWD, $HOME, $OSTYPE, $BASH, $TERM, $HOSTNAME`
+ * `env` - Which variables are defined (but just the names and not the values)
+ * `history` - Recently executed commands
+ * `ls` - Recently modified files in the current directory 
+ * `--help` - any additional help information for the current command
 
+If you are curious, you can see the full prompt using
+```
+autocomplete command --dry-run "anything you want here"
+```
+[Pull Requests](https://github.com/closedloop-technologies/autocomplete-sh/pulls) are welcome if you want to make it better!
+
+By default we cache the last 20 requests to reduce latency and costs.  
+
+### Configuration
+
+```bash
+autocomplete config
+```
+< TODO INSERT PICTURE OF DEFAULT CONFIG>
+
+Configurations can be changed with
+```bash
+autocomplete config set <key> <value>
+```
+For example `autocomplete config set api_key sk-p...` will update your API key.
+
+`autocomplete config reset` will restore config to the default values
+
+### Tracking Usage
+```bash
+autocomplete usage
+```
+< TODO INSERT PICTURE OF USAGE>
+
+The average cost for me is about half a penny per request using the latest gpt-4-omni model. For a lower cost model run the following commands:
+```bash
+autocomplete config set model gpt-3.5-turbo
+autocomplete config set prompt_cost 0.0000005
+autocomplete config set completion_cost 0.0000015
+```
+Then from now one it will log the calls correctly
+
+As always `--help` will get you more
 ```bash
 autocomplete --help
 ```
 
-### Example
+< TODO INSERT PICTURE OF help screen>
+
+## Use Cases
+
+< TODO Replace each persona with a GIF of completions and the before + after text completions.  Use [USAGE.md](USAGE.md)>
+
+### Data Engineer
+Quickly manipulate datasets in the terminal to efficiently complete data transformations and move on to analysis or further processing.
 
 ```bash
-ffmpeg "make a video from images"<TAB><TAB>
+ls
+awk -F',' '{print $1}' data.csv | grep 'keyword'
+spark-submit --master yarn my_script.py --input data.csv --output results/
+python -c "import pandas as pd; df1 = pd.read_csv('data1.csv'); df2 = pd.read_csv('data2.csv'); merged_df = pd.merge(df1, df2, on='key_column'); merged_df.to_csv('merged_data.csv', index=False)"
 ```
+
+### Backend Developer
+Swiftly deploy updates and focus on improving your codebase.
 
 ```bash
-! "run the last command"<TAB><TAB>
+git init
+gcc -o output_file input_file.c
+pytest tests/
+docker build -t my_image .
+docker run -d -p 8080:80 my_image
 ```
+
+### Linux User
+- Effortlessly navigate and control your system for seamless administration.
+```bash
+top
+sudo apt install package_name
+chmod 755 script.sh
+sudo systemctl start service_name
+```
+
+### Terminal Novice
+Build confidence and proficiency with every command.
 
 ```bash
-
-
-## Core Tasks
-
-- [x] It should call a language model to generate the completion
-- [x] It should install a bash completion script for all commands
-- [x] It should have a configuration file to specify the language model and API key
-- [x] A CLI to manage the configuration file and install / uninstall the bash completion script
-
-### Context should include
-
-- [x] environment variables
-- [x] files
-- [x] command history
-- [x] help text
-
-### Nice to Haves
-
-- [x] Caching
-- [ ] Support for other shells
-- [ ] Support for custom language models
-- [ ] previous command outputs and errors
-- [ ] Add Security Badge <https://www.bestpractices.dev/en/projects/9056/edit#all>
-
-## File Structure
-
+cd path/to/directory
+touch new_file.txt
+cp file.txt destination/
+cat file.txt
 ```
 
-# The script should be placed in
-/usr/local/bin/autocomplete # if installed manually
-<!-- /usr/bin/autocomplete # if apt-get install autocomplete -->
+### Efficiency Seeker
+Streamline tasks and reclaim valuable time for what matters most.
 
-
-# Configuration Files
-~/.autocomplete/config
-~/.autocomplete/cache/...
+```bash
+sed -i 's/old_text/new_text/g' *.txt
+tar -czvf archive.tar.gz directory/
+tar -xzvf archive.tar.gz
+cat file.txt | grep 'keyword' | wc -l
 ```
 
-## Inspiration
+### Documentation Seeker
+Resolve issues and understand commands with ease.
 
-<https://github.com/nvm-sh/nvm/tree/master>
+```bash
+man command_name
+apropos keyword
+help
+dpkg -l | grep package_name
+```
+
+### Inspiration
+
+ * [NVM](https://github.com/nvm-sh/nvm/tree/master)
+ * [OpenCommit](https://github.com/di-sukharev/opencommit)
+ * [Omakub](https://omakub.org/)
 
 ## Maintainers
 
@@ -87,30 +149,3 @@ Governance will be re-evaluated as the project evolves.
 ## License
 
 See the [LICENSE](./LICENSE) file for details.
-
-
-## Development
-
-
-
-Pre Commit Hooks
-
-    pip install pre-commit
-    pre-commit install
-
-Tests
-
-    sudo apt install bats
-    bats tests
-
-# Tests to run
-- [ ] install             Install the autocomplete script from .bashrc
-- [ ] remove              Remove the autocomplete script from .bashrc
-- [ ] info                Displays status and config values
-- [ ] system              Displays system information
-- [ ] config set <key> <value>  Set a configuration value
-- [ ] enable              Enable the autocomplete script
-- [ ] disable             Disable the autocomplete script
-- [ ] command             Run the autocomplete command
-- [ ] command --dry-run   Only show the prompt without running the command
-- [ ] command --explain   Show the explanation for the command
