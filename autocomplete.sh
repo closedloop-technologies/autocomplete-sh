@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.2.4
+export ACSH_VERSION=0.2.6
 
 ###############################################################################
 #
