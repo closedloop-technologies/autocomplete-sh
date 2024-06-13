@@ -54,13 +54,20 @@ autocomplete usage
 ```
 < TODO INSERT PICTURE OF USAGE>
 
-The average cost for me is about half a penny per request using the latest gpt-4-omni model. For a lower cost model run the following commands:
+The average cost for me is about half a penny per request using the latest **gpt-4-omni** model. 
+
+The next section has instructions for the lower cost **gpt-3.5-turbo** model. 
+
+### Model Selection GPT-3.5-turbo Settings
+GPT 3.5 has a lower cost model that is still quite effective.  
+It costs about 10-20 calls per $0.01
+
+Run the following commands to switch to the lower cost model
 ```bash
 autocomplete config set model gpt-3.5-turbo
-autocomplete config set prompt_cost 0.0000005
-autocomplete config set completion_cost 0.0000015
+autocomplete config set api_prompt_cost 0.0000005
+autocomplete config set api_completion_cost 0.0000015
 ```
-Then from now one it will log the calls correctly
 
 As always `--help` will get you more
 ```bash

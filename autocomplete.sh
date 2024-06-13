@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.2.3
+export ACSH_VERSION=0.2.4
 
 ###############################################################################
 #
@@ -111,14 +111,27 @@ Take a deep breath. You got this!
 RETURN A JSON OBJECT WITH THE COMPLETIONS"
 }
 
-# Get the last 20 commands from the bash history
-# GOTCHA: The history only populate if you run the command in the same terminal.  If you run it
-# in a ./autocomplete_api.sh, it will not be populated since that runs in a different environment
+
 _get_command_history() {
 	local HISTORY_LIMIT
     HISTORY_LIMIT=${ACSH_MAX_HISTORY_COMMANDS:-20}
 	history | tail -n "$HISTORY_LIMIT"
 }
+
+# Find and replace sensitive information in the command history
+_get_clean_command_history() {
+    # Note: The following regex patterns are not exhaustive and may need to be updated
+    local recent_history
+    recent_history=$(_get_command_history)
+    recent_history=$(echo "$recent_history" | sed -E 's/:[[:xdigit:]]\{36,40\}/REDACTED_HASH/' )
+    recent_history="${recent_history//[A-Za-z0-9-]\{36\}/REDACTED_UUID}"
+    recent_history="${recent_history//[A-Za-z0-9]\{16,40\}/REDACTED_APIKEY}"
+    echo -e "$recent_history"
+}
+# Get the last 20 commands from the bash history
+# GOTCHA: The history only populate if you run the command in the same terminal.  If you run it
+# in a ./autocomplete_api.sh, it will not be populated since that runs in a different environment
+# Functions which help preserve user privacy by sanitizing user data
 
 _get_recent_files() {
 	local FILE_LIMIT
@@ -151,7 +164,7 @@ _build_prompt() {
 	# Define contextual information for the completion request
 	local user_input command_history terminal_context help_message recent_files output_instructions other_environment_variables prompt
 	user_input="$*"
-	command_history=$(_get_command_history)
+	command_history=$(_get_clean_command_history)
 	terminal_context=$(_get_terminal_info)
 	help_message=$(_get_help_message "$user_input")
 	recent_files=$(_get_recent_files)
@@ -172,7 +185,7 @@ $other_environment_variables
 \`\`\`
 
 ## History
-Recently run commands (in order):
+Recently run commands (in order) - Note some information is REDACTED
 \`\`\`
 $command_history
 \`\`\`
@@ -725,7 +738,9 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         echo "To install autocomplete.sh, you need an OpenAI API Key"
         echo "This is stored locally in the ~/.autocomplete/config file"
         echo "Create a new one here: https://platform.openai.com/settings/profile?tab=api-keys"
-        read -r -p "Enter your OpenAI API Key: " user_api_key_input
+        
+        read -spr "Enter OpenAI API Key: " user_api_key_input && echo
+
         if [[ -z "$user_api_key_input" ]]; then
             echo_error "API Key not set"
             echo -e "Please set it later using the following command: export OPENAI_API_KEY=<your-api-key>"
