@@ -523,8 +523,8 @@ show_help() {
 }
 
 show_config() {
-	local is_enabled config_file
-    local term_width bigwidth table_width
+	local is_enabled config_file config_value
+    local term_width small_table rest
 
 	is_enabled=$(check_if_enabled)
 	echo_green "Autocomplete.sh - Configuration and Settings - Version $ACSH_VERSION"
@@ -544,44 +544,39 @@ show_config() {
     load_config
     echo
     term_width=$(tput cols)
-    table_width=$((term_width - 40))
-    bigwidth=$((term_width - 26))
+    if [[ term_width -gt 70 ]]; then
+        term_width=70
+        small_table=0
+    fi
+    if [[ term_width -lt 40 ]]; then
+        term_width=70
+        small_table=1
+    fi
 
     for config_var in $(compgen -v | grep ACSH_); do
-        
         if [[ $config_var == "ACSH_INPUT" ]] || [[ $config_var == "ACSH_PROMPT" ]] || [[ $config_var == "ACSH_RESPONSE" ]]; then
             continue
         fi
-        
-        config_value=${!config_var}
-        echo -en "  $config_var:\e[90m"
-        if [[ ${#config_value} -lt $table_width ]]; then
-            printf '%s%*s' "" $((table_width - ${#config_var})) ''
-        else
-            printf '%s%*s' "" $((16 - ${#config_var})) ''
-        fi
+        config_value="${!config_var}"
+
         if [[ $config_var == "ACSH_API_KEY" ]]; then
             # show the first 2 characters of the api key and the last 4 characters
             if [[ -z ${!config_var} ]]; then
                 echo -en "\e[31m"
-                printf "%${table_width}s" "UNSET"
+                config_value="UNSET"
             else
-                local rest
                 rest=${!config_var:4}
-                printf "%${table_width}s" "${!config_var:0:4}...${rest:-4}"
-            fi
-        else
-            # repeat spaces to align the values repeat 27 - length config_var 
-            
-            if [[ ${#config_value} -lt $table_width ]]; then
-                # replace below to make %10 = $table_width
-                # printf "%10s" "${!config_var}"
-                printf "%${table_width}s" "${!config_var}"
-            else
-                printf "%${bigwidth}s" "${!config_var}"
+                config_value="${!config_var:0:4}...${rest: -4}"
             fi
         fi
-        echo -e "\e[0m"
+        echo -en "  $config_var:\e[90m"
+        if [[ small_table -eq 1 ]]; then
+            echo -e "\n  $config_value\e[0m"
+        else
+            printf '%s%*s' "" $((term_width - ${#config_var} - ${#config_value} - 3)) ''
+            echo -e "$config_value\e[0m"
+        fi
+        
     done
 }
 
