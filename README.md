@@ -140,6 +140,28 @@ help
 dpkg -l | grep package_name
 ```
 
+## Development
+
+Install locally
+
+```bash
+git clone git@github.com:closedloop-technologies/autocomplete-sh.git
+# Create a symlink to install the script in your path
+ln -s $PWD/autocomplete.sh $HOME/.local/bin/autocomplete
+# Run the install script
+. autocomplete.sh install
+```
+
+Pre Commit Hooks for shellcheck
+
+    pip install pre-commit
+    pre-commit install
+
+Tests via Bats
+
+    sudo apt install bats
+    bats tests
+
 ### Inspiration
 
  * [NVM](https://github.com/nvm-sh/nvm/tree/master)
