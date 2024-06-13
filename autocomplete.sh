@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.2.6b
+export ACSH_VERSION=0.2.7
 
 ###############################################################################
 #
@@ -541,7 +541,7 @@ show_config() {
 
 	is_enabled=$(check_if_enabled)
 	echo_green "Autocomplete.sh - Configuration and Settings - Version $ACSH_VERSION"
-	if [ "$is_enabled" ]; then
+	if [[ "$is_enabled" = "enabled" ]]; then
 		# echo enabled in green
         echo -e "  STATUS: \033[32;5mEnabled\033[0m \033[0m"
 	else
