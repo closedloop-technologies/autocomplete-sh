@@ -3,9 +3,6 @@
 # AutoComplete.sh - brings LLMs into the Terminal
 # This install script downloads the latest version of the LLMs
 
-# Copy this file to the appropriate location https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v0.1.0/autocomplete.sh
-# Run the script to install the LLMs
-
 # The URL of the latest version of the LLMs
 ACSH_VERSION="0.2.4"
 URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v${ACSH_VERSION}/autocomplete.sh"
