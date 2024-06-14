@@ -3,8 +3,82 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Autocomplete.sh</title>
+    <title>Autocomplete.sh: `--help` less, accomplish more. Command your terminal</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+
+    <!-- Open Graph tags -->
+    <meta property="og:title" content="Autocomplete.sh">
+    <meta property="og:description" content="Autocomplete.sh adds intelligent command-line suggestions for you directly in the terminal. Just type Tab Tab and it calls an LLM (OpenAI by default) and returns the top suggestions for you.">
+<!--     <meta property="og:image" content="https://autocomplete.sh/images/autocomplete-sh-logo.png"> -->
+    <meta property="og:url" content="https://autocomplete.sh">
+    <meta property="og:type" content="website">
+
+    <!-- Twitter Card tags -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Autocomplete.sh">
+    <meta name="twitter:description" content="Autocomplete.sh adds intelligent command-line suggestions for you directly in the terminal. Just type Tab Tab and it calls an LLM (OpenAI by default) and returns the top suggestions for you.">
+<!--     <meta name="twitter:image" content="https://autocomplete.sh/images/autocomplete-sh-logo.png"> -->
+
+    <!-- Additional meta tags -->
+    <meta name="description" content="Autocomplete.sh adds intelligent command-line suggestions for you directly in the terminal. Just type Tab Tab and it calls an LLM (OpenAI by default) and returns the top suggestions for you.">
+    <meta name="keywords" content="autocomplete, command-line, terminal, LLM, OpenAI, suggestions">
+    <meta name="author" content="Closedloop.tech">
+
+    <!-- Favicons -->
+<!--     <link rel="icon" href="https://autocomplete.sh/images/favicon.ico" type="image/x-icon"> -->
+<!--     <link rel="apple-touch-icon" href="https://autocomplete.sh/images/apple-touch-icon.png"> -->
+
+    <style>
+    body {
+        font-family: 'Helvetica Neue', Arial, sans-serif;
+        line-height: 1.6;
+    }
+
+    pre {
+        background-color: #f4f4f4;
+        padding: 1rem;
+        overflow-x: auto;
+    }
+
+    code {
+        font-family: 'Courier New', monospace;
+        background-color: #f4f4f4;
+        padding: 0.25rem;
+    }
+
+    kbd {
+        background-color: #eee;
+        border-radius: 3px;
+        border: 1px solid #b4b4b4;
+        box-shadow: 0 1px 1px rgba(0, 0, 0, 0.2), 0 2px 0 0 rgba(255, 255, 255, 0.7) inset;
+        color: #333;
+        display: inline-block;
+        font-size: 0.85em;
+        font-weight: 700;
+        line-height: 1;
+        padding: 2px 4px;
+        white-space: nowrap;
+    }
+
+    .container {
+        max-width: 960px;
+    }
+
+    .video-container {
+        position: relative;
+        padding-bottom: 56.25%;
+        height: 0;
+        overflow: hidden;
+    }
+
+    .video-container iframe {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+    }
+</style>
 </head>
 <body class="bg-gray-100">
     <div class="container mx-auto px-4 py-8">
