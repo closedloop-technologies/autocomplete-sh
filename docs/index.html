@@ -29,6 +29,10 @@
 <!--     <link rel="apple-touch-icon" href="https://autocomplete.sh/images/apple-touch-icon.png"> -->
 
     <style>
+    a {
+        color: #0000EE;
+        text-decoration: underline;
+    }
     body {
         font-family: 'Helvetica Neue', Arial, sans-serif;
         line-height: 1.6;
@@ -117,25 +121,31 @@
                 <a href="https://github.com/closedloop-technologies/autocomplete-sh/pulls">Pull Requests</a> are welcome if you want to make it better!
             </p>
         </div>
-
-        <div class="mb-8">
+        
+         <div class="mb-8">
             <h3 class="text-2xl font-bold mb-4">Configuration</h3>
             <pre><code class="language-bash">autocomplete config</code></pre>
             <p>Configurations can be changed with</p>
             <pre><code class="language-bash">autocomplete config set &lt;key&gt; &lt;value&gt;</code></pre>
             <p>For example <code>autocomplete config set api_key sk-p...</code> will update your API key.</p>
-            <pre><code class="language-bash">autocomplete config reset</code></pre>
-            <p>will restore config to the default values</p>
+            <p><code>autocomplete config reset</code> will restore config to the default values</p>
         </div>
 
         <div class="mb-8">
             <h3 class="text-2xl font-bold mb-4">Tracking Usage</h3>
             <pre><code class="language-bash">autocomplete usage</code></pre>
-            <p>The average cost for me is about half a penny per request using the latest gpt-4-omni model. For a lower cost model run the following commands:</p>
+            <p>The average cost for me is about half a penny per request using the latest <strong>gpt-4-omni</strong> model.</p>
+            <p>The next section has instructions for the lower cost <strong>gpt-3.5-turbo</strong> model.</p>
+        </div>
+
+        <div class="mb-8">
+            <h3 class="text-2xl font-bold mb-4">Model Selection GPT-3.5-turbo Settings</h3>
+            <p>GPT 3.5 has a lower cost model that is still quite effective.</p>
+            <p>It costs about 10-20 calls per $0.01</p>
+            <p>Run the following commands to switch to the lower cost model</p>
             <pre><code class="language-bash">autocomplete config set model gpt-3.5-turbo
-autocomplete config set prompt_cost 0.0000005
-autocomplete config set completion_cost 0.0000015</code></pre>
-            <p>Then from now on it will log the calls correctly</p>
+autocomplete config set api_prompt_cost 0.0000005
+autocomplete config set api_completion_cost 0.0000015</code></pre>
             <p>As always <code>--help</code> will get you more</p>
             <pre><code class="language-bash">autocomplete --help</code></pre>
         </div>
