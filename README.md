@@ -6,6 +6,10 @@ Autocomplete.sh
 
 < Insert Small GIF cursor turning green and outputing >
 
+### Support Open Source
+Although writing 1,049 lines of bash was its own "reward", if you tried it and love it please show your support here!
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/skruzel)
+
 ## Installation
 
 ```bash
