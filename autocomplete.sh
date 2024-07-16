@@ -103,8 +103,8 @@ The output must not contain any backticks or quotes such as \`command\` or \"com
 
 _get_output_instructions() {
 	echo "Provide a list of suggested completions or commands that could be run in the terminal.
-YOU MUST provide a list of two to five possible completions or rewritten commands here 
-DO NOT wrap the commands in backticks or quotes such as \`command\` or \"command\" or \`\`\`command\`\`\` 
+YOU MUST provide a list of two to five possible completions or rewritten commands here
+DO NOT wrap the commands in backticks or quotes such as \`command\` or \"command\" or \`\`\`command\`\`\`
 Each must be a valid command or set of commands somehow chained together that could be run in the terminal
 Please focus on the user's intent, recent commands, and the current environment when brainstorming completions.
 Take a deep breath. You got this!
@@ -272,7 +272,7 @@ log_request() {
     prompt_tokens_int=$((prompt_tokens))
     completion_tokens=$(echo "$response_body" | jq -r '.usage.completion_tokens')
     completion_tokens_int=$((completion_tokens))
-    
+
     created=$(echo "$response_body" | jq -r '.created')
     api_cost=$(echo "$prompt_tokens_int * $ACSH_API_PROMPT_COST + $completion_tokens_int * $ACSH_API_COMPLETION_COST" | bc)
 
@@ -282,7 +282,7 @@ log_request() {
 }
 
 openai_completion() {
-	local content status_code response_body default_user_input user_input 
+	local content status_code response_body default_user_input user_input
     local api_key config_file payload response completions endpoint timeout
     local prompt_tokens completion_tokens created api_cost prompt_tokens_int completion_tokens_int
 
@@ -487,7 +487,7 @@ or disable autocomplete via \e[0mautocomplete disable\e[31m"
 				# find and replace all : in $completions with an escaped version
 				readarray -t COMPREPLY <<<"$(echo -n "${completions}" | sed "s/${command}[[:space:]]*//" | sed 's/:/\\:/g')"
 			else
-				# Add a counter to the completions so that autocomplete 
+				# Add a counter to the completions so that autocomplete
                 # can display them in the block format
 				completions=$(echo "$completions" | awk '{print NR". "$0}')
 				readarray -t COMPREPLY <<< "$completions"
@@ -509,7 +509,7 @@ or disable autocomplete via \e[0mautocomplete disable\e[31m"
 show_help() {
 	echo_green "Autocomplete.sh - LLM Powered Bash Completion"
 	echo "Usage: autocomplete [options] command"
-	echo "       autocomplete [options] install|remove|config|enable|disable|clear|usage|system|command|--help"
+	echo "       autocomplete [options] install|remove|config|model|enable|disable|clear|usage|system|command|--help"
 	echo
 	echo "autocomplete.sh is a script to enhance bash completion with LLM capabilities."
 	echo
@@ -517,19 +517,24 @@ show_help() {
 	echo "Just by pressing the Tab key, you can get the most likely completion for the command."
 	echo "It provides various commands to manage and configure the autocomplete features."
 	echo
-	echo "Most used commands:"
-	echo "  install             Install the autocomplete script from .bashrc"
-	echo "  remove              Remove the autocomplete script from .bashrc"
-  echo "  config              Displays status and config values"
-	echo "  config set <key> <value>  Set a configuration value"
-	echo "  config reset        Reset configuration to default values"
-	echo "  enable              Enable the autocomplete script"
-	echo "  disable             Disable the autocomplete script"
-  echo "  clear               Clear the cache directory and log file"
-  echo "  usage               Display usage information including cost"
-  echo "  system              Displays system information"
+	echo "Most used:"
 	echo "  command             Run the autocomplete command same a pressing <tab><tab>"
 	echo "  command --dry-run   Only show the prompt without running the command"
+    echo
+    echo "Configuration and Settings:"
+    echo "  model               Change the language model used for completion"
+    echo "  usage               Display usage information including cost"
+    echo "  system              Displays system information"
+    echo "  config              Displays status and config values"
+	echo "  config set <key> <value>  Set a configuration value"
+	echo "  config reset        Reset configuration to default values"
+	echo
+    echo "Installation / Removal / Cache Reset:"
+    echo "  install             Install the autocomplete script from .bashrc"
+	echo "  remove              Remove the autocomplete script from .bashrc"
+	echo "  enable              Enable the autocomplete script"
+	echo "  disable             Disable the autocomplete script"
+    echo "  clear               Clear the cache directory and log file"
 	echo
 	echo "Submit bugs or feedback here: https://github.com/closedloop-technologies/autocomplete-sh/issues"
 	echo "For more information, visit: https://autocomplete.sh"
@@ -589,13 +594,13 @@ show_config() {
             printf '%s%*s' "" $((term_width - ${#config_var} - ${#config_value} - 3)) ''
             echo -e "$config_value\e[0m"
         fi
-        
+
     done
 }
 
 config_command() {
     local key value command config_file
-    
+
     config_file="$HOME/.autocomplete/config"
 	command="${*:2}"
 
@@ -606,7 +611,7 @@ config_command() {
 	# If command is set, show the configuration value
 	# command should be in the format `set <key> <value>`
 	if [ "$2" == "set" ]; then
-        
+
 		key="$3"
 		value="$4"
         key=${key,,}  # Convert to lowercase
@@ -615,14 +620,14 @@ config_command() {
 			echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
 			return
 		fi
-        
+
         load_config
         if [ ! -f "$config_file" ]; then
             echo_error "Configuration file not found: $config_file"
             echo_error "Run autocomplete install"
             return
         fi
-        
+
 		echo -e "Setting configuration key \`$key\` to value \`$value\`"
 
         # find the key in the config file and replace it with the new value
@@ -646,7 +651,7 @@ config_command() {
 build_config() {
     local config_file default_config api_key
     config_file="$HOME/.autocomplete/config"
-    
+
     if [ ! -f "$config_file" ]; then
         echo "Creating the ~/.autocomplete/config file with default values"
         api_key="${ACSH_API_KEY:-$OPENAI_API_KEY}"
@@ -656,7 +661,7 @@ build_config() {
 # You can set this here or as an environment variable named OPENAI_API_KEY
 api_key: $api_key
 
-# Model configuration 
+# Model configuration
 ## Model List https://platform.openai.com/docs/models
 model: gpt-4o
 temperature: 0.0
@@ -738,7 +743,7 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         echo "To install autocomplete.sh, you need an OpenAI API Key"
         echo "This is stored locally in the ~/.autocomplete/config file"
         echo "Create a new one here: https://platform.openai.com/settings/profile?tab=api-keys"
-                
+
         echo -n "Enter OpenAI API Key: "
         read -sr user_api_key_input < /dev/tty
         echo
@@ -749,9 +754,9 @@ Please follow the install instructions on https://github.com/closedloop-technolo
             echo -e "or set it in the ~/.autocomplete/config configuration file via: autocomplete config set api_key <your-api-key>"
         else
             export ACSH_API_KEY="$user_api_key_input"
-        fi       
+        fi
     else
-        echo_green "OpenAPI key is loaded from the environment variable" 
+        echo_green "OpenAPI key is loaded from the environment variable"
     fi
 
     # Create $HOME/.autocomplete/cache/ if it does not exist
@@ -822,7 +827,7 @@ remove_command() {
     # Remove the autocomplete.sh setup line from .bashrc
     if [ -f "$bashrc_file" ]; then
         if grep -qF "source autocomplete enable" "$bashrc_file"; then
-            
+
             # remove lines that start with # Autocomplete.sh
             sed -i '/# Autocomplete.sh/d' "$bashrc_file"
 
@@ -872,7 +877,8 @@ clear
 usage
 system
 command
---help" 
+model
+--help"
     fi
 
 }
@@ -918,7 +924,7 @@ clear_command() {
     cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
     log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"}
 
-    # Prompt user to confirm 
+    # Prompt user to confirm
     echo "This will remove the cache directory and log file"
     # Make cache_dir show in red
     echo -e "Cache dir:\t\e[31m$cache_dir\e[0m"
@@ -941,7 +947,7 @@ clear_command() {
         else
             echo "Cache directory is empty"
         fi
-        
+
         echo "Removed: $cache_dir"
     fi
     if [ -f "$log_file" ]; then
@@ -1012,6 +1018,126 @@ usage_command() {
     echo -e "To clear the log file and cache directory, run: \e[90mautocomplete clear\e[0m"
 }
 
+# Function to capture key presses
+get_key() {
+  IFS= read -rsn1 key 2>/dev/null >&2
+  if [[ $key == $'\x1b' ]]; then
+    read -rsn2 key
+    if [[ $key == [A ]]; then echo up; fi
+    if [[ $key == [B ]]; then echo down; fi
+  fi
+}
+
+declare -A _autocomplete_modellist
+# https://openai.com/api/pricing/
+_autocomplete_modellist['gpt-4o']='{"pad":"_________________", "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o"}'
+_autocomplete_modellist['gpt-3.5-turbo-0125']='{"pad":"_____", "completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125"}'
+_autocomplete_modellist['gpt-3.5-turbo-instruct']='{"pad":"_", "completion_cost":0.0000020,"prompt_cost":0.0000015,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-instruct"}'
+
+# Function to display a menu and let the user select an option using arrow keys
+menu_selector() {
+
+  # Build the options array from the models object
+  options=("$@")
+  # Initial selected option
+  selected=0
+
+  # Function to display the menu
+  show_menu() {
+    echo "Choose an option:"
+    for i in "${!options[@]}"; do
+      if [[ $i == "$selected" ]]; then
+        echo -e "\e[1;32m> ${options[i]}\e[0m"
+      else
+        echo "  ${options[i]}"
+      fi
+    done
+  }
+
+  # Save the current cursor position
+  tput sc
+
+  # Infinite loop to handle user input
+  while true; do
+    # Restore the cursor position and clear to the end of the screen
+    tput rc
+    tput ed
+    show_menu
+    key=$(get_key)
+    case $key in
+      up)
+        ((selected--))
+        if ((selected < 0)); then
+          selected=$((${#options[@]} - 1))
+        fi
+        ;;
+      down)
+        ((selected++))
+        if ((selected >= ${#options[@]})); then
+          selected=0
+        fi
+        ;;
+      "")
+        break
+        ;;
+    esac
+  done
+  clear
+  return $selected
+}
+
+# Example function to demonstrate using the menu_selector
+model_command() {
+  clear
+  local options=()
+  for key in "${!_autocomplete_modellist[@]}"; do
+      options+=("$key")
+  done
+  echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+  menu_selector "${options[@]}"
+  selected_option=$?
+  echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+  echo "Selected: ${options[selected_option]}"
+
+  model="${ACSH_MODEL:-"gpt-4o"}"
+  temperature=${ACSH_TEMPERATURE:-0.0}
+
+  # ACSH_API_KEY:                                            sk-p...ghRJ
+  # # TODO save the api key in the config file with an endpoint prefix
+  # ACSH_API_COMPLETION_COST:                                   0.000015
+  # ACSH_API_PROMPT_COST:                                       0.000005
+  # ACSH_ENDPOINT:            https://api.openai.com/v1/chat/completions
+  # ACSH_MODEL:                                                   gpt-4o
+  # ACSH_TEMPERATURE:                                                0.0
+
+  echo
+  echo -e "Model:\t\t\e[90m$model\e[0m"
+  echo -e "Temperature:\t\e[90m$temperature\e[0m"
+  echo
+  echo -e "Costs/token:\t\e[90mprompt:    \t\$$ACSH_API_PROMPT_COST\e[0m"
+  echo -e "            \t\e[90mcompletion:\t\$$ACSH_API_COMPLETION_COST\e[0m"
+  echo
+  echo -e "Endpoint:   \t\e[90m$ACSH_ENDPOINT\e[0m"
+  echo -en "API Key:    \t"
+
+  if [[ -z $ACSH_API_KEY ]]; then
+      echo -en "\e[31mUNSET"
+  else
+      rest=${ACSH_API_KEY:4}
+      config_value="${ACSH_API_KEY:0:4}...${rest: -4}"
+      echo -en "\e[32m${config_value}"
+  fi
+  echo -e "\e[0m"
+
+  if [[ -z $ACSH_API_KEY ]]; then
+        echo
+        echo -e "To set the API Key, run: \t\e[31mautocomplete config set api_key <your-api>\e[0m"
+  else
+        echo
+  fi
+  echo -e "To change the temperature, run: \e[90mautocomplete config set temperature <temperature>\e[0m"
+}
+
 case "$1" in
 "--help")
 	show_help
@@ -1030,6 +1156,9 @@ clear)
 	;;
 usage)
     usage_command
+    ;;
+model)
+    model_command
     ;;
 config)
 	config_command "$@"
