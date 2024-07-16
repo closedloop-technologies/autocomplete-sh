@@ -598,54 +598,63 @@ show_config() {
     done
 }
 
+# Function to set a configuration key-value pair
+set_config() {
+    local key="$1"
+    local value="$2"
+    local config_file="$HOME/.autocomplete/config"
+
+    key=${key,,}  # Convert to lowercase
+    key=${key//[^a-zA-Z0-9]/_}  # Replace non-alphanumeric characters with _
+
+    if [ -z "$key" ]; then
+        echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
+        return
+    fi
+
+    if [ ! -f "$config_file" ]; then
+        echo_error "Configuration file not found: $config_file"
+        echo_error "Run autocomplete install"
+        return
+    fi
+
+    # Find the key in the config file and replace it with the new value
+    # sed -i "s/\(^$key:\).*/\1 $value/" "$config_file"
+    sed -i "s|^\($key:\).*|\1 $value|" "$config_file"
+
+    # Display the new value by loading the config
+    load_config
+}
+
+# Function to handle config commands
 config_command() {
-    local key value command config_file
+    local command config_file
 
     config_file="$HOME/.autocomplete/config"
-	command="${*:2}"
+    command="${*:2}"
 
-	if [ -z "$command" ]; then
-		show_config
+    if [ -z "$command" ]; then
+        show_config
         return
-	fi
-	# If command is set, show the configuration value
-	# command should be in the format `set <key> <value>`
-	if [ "$2" == "set" ]; then
-
-		key="$3"
-		value="$4"
-        key=${key,,}  # Convert to lowercase
-        key=${key//[^a-zA-Z0-9]/_}  # Replace non-alphanumeric characters with _
-		if [ -z "$key" ]; then
-			echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\`"
-			return
-		fi
-
-        load_config
-        if [ ! -f "$config_file" ]; then
-            echo_error "Configuration file not found: $config_file"
-            echo_error "Run autocomplete install"
-            return
-        fi
-
-		echo -e "Setting configuration key \`$key\` to value \`$value\`"
-
-        # find the key in the config file and replace it with the new value
-        sed -i "s/\(^$key:\).*/\1 $value/" "$config_file"
-
-        # display the new value by loading the config
-        load_config
+    fi
+    # If command is set, show the configuration value
+    # command should be in the format `set <key> <value>`
+    if [ "$2" == "set" ]; then
+        local key="$3"
+        local value="$4"
+        echo -e "Setting configuration key \`$key\` to value \`$value\`"
+        set_config "$key" "$value"
         echo_green "Configuration updated: run \`autocomplete config\` to see the changes"
-		return
-	fi
+        return
+    fi
     if [[ "$command" == "reset" ]]; then
         echo "Resetting configuration to default values"
-        # remove the config file if it exists
+        # Remove the config file if it exists
         rm "$config_file" || true
         build_config
         return
     fi
-	echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\ or autocomplete config reset\`"
+    echo_error "SyntaxError: expected \`autocomplete config set <key> <value>\ or autocomplete config reset\`"
 }
 
 build_config() {
@@ -1089,7 +1098,7 @@ menu_selector() {
 # Example function to demonstrate using the menu_selector
 model_command() {
   clear
-  local options=()
+  local selected_model, options=()
   for key in "${!_autocomplete_modellist[@]}"; do
       options+=("$key")
   done
@@ -1097,24 +1106,25 @@ model_command() {
   menu_selector "${options[@]}"
   selected_option=$?
   echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
-  echo "Selected: ${options[selected_option]}"
+  selected_model="${options[selected_option]}"
+  selected_value="${_autocomplete_modellist[$selected_model]}"
+  set_config "model" "$selected_model"
+  set_config "endpoint" "$(echo "$selected_value" | jq -r '.endpoint')"
+
+  prompt_cost=$(echo "$selected_value" | jq -r '.prompt_cost' | awk '{printf "%.8f", $1}' )
+  completion_cost=$(echo "$selected_value" | jq -r '.completion_cost' | awk '{printf "%.8f", $1}')
+
+  set_config "api_prompt_cost" "$prompt_cost"
+  set_config "api_completion_cost" "$completion_cost"
 
   model="${ACSH_MODEL:-"gpt-4o"}"
   temperature=${ACSH_TEMPERATURE:-0.0}
-
-  # ACSH_API_KEY:                                            sk-p...ghRJ
-  # # TODO save the api key in the config file with an endpoint prefix
-  # ACSH_API_COMPLETION_COST:                                   0.000015
-  # ACSH_API_PROMPT_COST:                                       0.000005
-  # ACSH_ENDPOINT:            https://api.openai.com/v1/chat/completions
-  # ACSH_MODEL:                                                   gpt-4o
-  # ACSH_TEMPERATURE:                                                0.0
 
   echo
   echo -e "Model:\t\t\e[90m$model\e[0m"
   echo -e "Temperature:\t\e[90m$temperature\e[0m"
   echo
-  echo -e "Costs/token:\t\e[90mprompt:    \t\$$ACSH_API_PROMPT_COST\e[0m"
+  echo -e "Cost/token:\t\e[90mprompt:    \t\$$ACSH_API_PROMPT_COST\e[0m"
   echo -e "            \t\e[90mcompletion:\t\$$ACSH_API_COMPLETION_COST\e[0m"
   echo
   echo -e "Endpoint:   \t\e[90m$ACSH_ENDPOINT\e[0m"
