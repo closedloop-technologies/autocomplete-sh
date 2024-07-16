@@ -294,15 +294,15 @@ openai_completion() {
 	default_user_input="Write two to six most likely commands given the provided information"
 	user_input=${*:-$default_user_input}
 
-    # First check if the ACSH_API_KEY is set else check if the OPENAI_API_KEY is set
-    if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
+    # First check if the ACSH_ACTIVE_API_KEY is set else check if the OPENAI_API_KEY is set
+    if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
         echo ""
-        echo_error "ACSH_API_KEY or OPENAI_API_KEY is not set"
+        echo_error "ACSH_ACTIVE_API_KEY not set"
         echo -e "Please set it using the following command: \e[90mexport OPENAI_API_KEY=<your-api-key>\e[0m"
         echo -e "or set it in the ~/.autocomplete/config configuration file via: \e[90mautocomplete config set OPENAI_API_KEY <your-api-key>\e[0m"
         return
     fi
-    api_key="${ACSH_API_KEY:-$OPENAI_API_KEY}"
+    api_key="${ACSH_ACTIVE_API_KEY:-$OPENAI_API_KEY}"
 	payload=$(_build_payload "$user_input")
 
     # Add 30 second timeout to the curl command
@@ -418,10 +418,12 @@ _autocompletesh() {
         load_config
 
         # CHECK API KEY is set
-        if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
-            echo_error "OPENAI_API_KEY is not set
-Please set it using the following command: \e[0mexport OPENAI_API_KEY=<your-api-key>\e[31m
-or set it in the ~/.autocomplete/config configuration file via \e[0mautocomplete config set OPENAI_API_KEY <your-api-key>\e[31m
+        if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
+            provider_key="${ACSH_PROVIDER:-openai}_API_KEY"
+            provider_key=${provider_key^^}
+            echo_error "${provider_key} is not set
+Please set it using the following command: \e[0mexport ${provider_key}=<your-api-key>\e[31m
+or set it in the ~/.autocomplete/config configuration file via \e[0mautocomplete config set ${provider_key} <your-api-key>\e[31m
 or disable autocomplete via \e[0mautocomplete disable\e[31m"
             echo
             return
@@ -576,18 +578,37 @@ show_config() {
             continue
         fi
         config_value="${!config_var}"
-
-        if [[ $config_var == "ACSH_API_KEY" ]]; then
-            # show the first 2 characters of the api key and the last 4 characters
-            if [[ -z ${!config_var} ]]; then
-                echo -en "\e[31m"
-                config_value="UNSET"
-            else
-                rest=${!config_var:4}
-                config_value="${!config_var:0:4}...${rest: -4}"
-            fi
+        if [[ ${config_var: -8}  == "_API_KEY" ]]; then
+            continue
         fi
         echo -en "  $config_var:\e[90m"
+        if [[ small_table -eq 1 ]]; then
+            echo -e "\n  $config_value\e[0m"
+        else
+            printf '%s%*s' "" $((term_width - ${#config_var} - ${#config_value} - 3)) ''
+            echo -e "$config_value\e[0m"
+        fi
+    done
+    echo -e "  ===================================================================="
+    for config_var in $(compgen -v | grep ACSH_); do
+        if [[ $config_var == "ACSH_INPUT" ]] || [[ $config_var == "ACSH_PROMPT" ]] || [[ $config_var == "ACSH_RESPONSE" ]]; then
+            continue
+        fi
+        config_value="${!config_var}"
+        if [[ ${config_var: -8}  != "_API_KEY" ]]; then
+            continue
+        fi
+        # show the first 2 characters of the api key and the last 4 characters
+        echo -en "  $config_var:\e[90m"
+        if [[ -z ${!config_var} ]]; then
+            echo -en "\e[31m"
+            config_value="UNSET"
+        else
+            echo -en "\e[32m"
+            rest=${!config_var:4}
+            config_value="${!config_var:0:4}...${rest: -4}"
+        fi
+        # echo -en "  $config_var:\e[90m"
         if [[ small_table -eq 1 ]]; then
             echo -e "\n  $config_value\e[0m"
         else
@@ -663,15 +684,27 @@ build_config() {
 
     if [ ! -f "$config_file" ]; then
         echo "Creating the ~/.autocomplete/config file with default values"
-        api_key="${ACSH_API_KEY:-$OPENAI_API_KEY}"
+        api_key="${ACSH_ACTIVE_API_KEY:-$OPENAI_API_KEY}"
         default_config="# ~/.autocomplete/config
 
-# OpenAI API Key
-# You can set this here or as an environment variable named OPENAI_API_KEY
-api_key: $api_key
+# OpenAI API Key set here or as an environment variable named OPENAI_API_KEY
+# https://platform.openai.com/api-keys
+openai_api_key: $OPENAI_API_KEY
+
+# Anthropic/Claude API Key set here or as an environment variable ANTHROPIC_API_KEY
+# https://console.anthropic.com/settings/keys
+anthropic_api_key: $ANTHROPIC_API_KEY
+
+# Groq API Key set here or as en environment variable GROQ_API_KEY
+# https://console.groq.com/keys
+groq_api_key: $GROQ_API_KEY
+
+# If your custom deployment like Ollama needs a key set it here or LLM_API_KEY
+custom_api_key: $LLM_API_KEY
 
 # Model configuration
 ## Model List https://platform.openai.com/docs/models
+provider: openai
 model: gpt-4o
 temperature: 0.0
 endpoint: https://api.openai.com/v1/chat/completions
@@ -721,6 +754,25 @@ load_config() {
                 export "ACSH_$key"="$value"
             fi
         done < "$config_file"
+
+        # Now assign ACSH_ACTIVE_API_KEY based on ACSH_PROVIDER
+        case "${ACSH_PROVIDER:-openai}" in
+            "openai")
+                export ACSH_ACTIVE_API_KEY="$ACSH_OPENAI_API_KEY"
+                ;;
+            "anthropic")
+                export ACSH_ACTIVE_API_KEY="$ACSH_ANTHROPIC_API_KEY"
+                ;;
+            "groq")
+                export ACSH_ACTIVE_API_KEY="$ACSH_GROQ_API_KEY"
+                ;;
+            "custom")
+                export ACSH_ACTIVE_API_KEY="$ACSH_CUSTOM_API_KEY"
+                ;;
+            *)
+                echo_error "Unknown provider: $ACSH_PROVIDER"
+                ;;
+        esac
     else
         echo "Configuration file not found: $config_file"
     fi
@@ -746,8 +798,10 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         mkdir -p "$HOME/.autocomplete"
     fi
 
+    # TODO select a model on install
+
     # If OPENAI_API_KEY is not set, prompt the user to set it
-    if [[ -z "$OPENAI_API_KEY" && -z "$ACSH_API_KEY" ]]; then
+    if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
         # PROMPT USER TO enter API KEY
         echo_green "Autocomplete.sh - Installation"
         echo "To install autocomplete.sh, you need an OpenAI API Key"
@@ -763,7 +817,7 @@ Please follow the install instructions on https://github.com/closedloop-technolo
             echo -e "Please set it later using the following command: export OPENAI_API_KEY=<your-api-key>"
             echo -e "or set it in the ~/.autocomplete/config configuration file via: autocomplete config set api_key <your-api-key>"
         else
-            export ACSH_API_KEY="$user_api_key_input"
+            export ACSH_ACTIVE_API_KEY="$user_api_key_input"
         fi
     else
         echo_green "OpenAPI key is loaded from the environment variable"
@@ -1040,8 +1094,8 @@ get_key() {
 
 declare -A _autocomplete_modellist
 # https://openai.com/api/pricing/
-_autocomplete_modellist['gpt-4o']='{"pad":"_________________", "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o"}'
-_autocomplete_modellist['gpt-3.5-turbo-0125']='{"pad":"_____", "completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125"}'
+_autocomplete_modellist['openai:\tgpt-4o']='{"pad":"_________________", "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o", "provider":"openai"}'
+_autocomplete_modellist['openai:\tgpt-3.5-turbo-0125']='{"pad":"_____", "completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125", "provider":"openai"}'
 
 # Function to display a menu and let the user select an option using arrow keys
 menu_selector() {
@@ -1053,14 +1107,18 @@ menu_selector() {
 
   # Function to display the menu
   show_menu() {
-    echo "Choose an option:"
+    echo
+    echo "Select a Language Model:"
+    echo
     for i in "${!options[@]}"; do
       if [[ $i == "$selected" ]]; then
         echo -e "\e[1;32m> ${options[i]}\e[0m"
       else
-        echo "  ${options[i]}"
+        echo -e "  ${options[i]}"
       fi
     done
+    echo
+    echo -ne "Press Enter to select the model\t"
   }
 
   # Save the current cursor position
@@ -1110,6 +1168,7 @@ model_command() {
   selected_value="${_autocomplete_modellist[$selected_model]}"
   set_config "model" "$selected_model"
   set_config "endpoint" "$(echo "$selected_value" | jq -r '.endpoint')"
+  set_config "provider" "$(echo "$selected_value" | jq -r '.provider')"
 
   prompt_cost=$(echo "$selected_value" | jq -r '.prompt_cost' | awk '{printf "%.8f", $1}' )
   completion_cost=$(echo "$selected_value" | jq -r '.completion_cost' | awk '{printf "%.8f", $1}')
@@ -1117,10 +1176,11 @@ model_command() {
   set_config "api_prompt_cost" "$prompt_cost"
   set_config "api_completion_cost" "$completion_cost"
 
-  model="${ACSH_MODEL:-"gpt-4o"}"
-  temperature=${ACSH_TEMPERATURE:-0.0}
+  model="${ACSH_MODEL:-"ERROR"}"
+  temperature=$(echo "${ACSH_TEMPERATURE:-0.0}" | awk '{printf "%.3f", $1}' )
 
   echo
+  echo -e "Provider:\t\e[90m$ACSH_PROVIDER\e[0m"
   echo -e "Model:\t\t\e[90m$model\e[0m"
   echo -e "Temperature:\t\e[90m$temperature\e[0m"
   echo
@@ -1130,16 +1190,16 @@ model_command() {
   echo -e "Endpoint:   \t\e[90m$ACSH_ENDPOINT\e[0m"
   echo -en "API Key:    \t"
 
-  if [[ -z $ACSH_API_KEY ]]; then
+  if [[ -z $ACSH_ACTIVE_API_KEY ]]; then
       echo -en "\e[31mUNSET"
   else
-      rest=${ACSH_API_KEY:4}
-      config_value="${ACSH_API_KEY:0:4}...${rest: -4}"
+      rest=${ACSH_ACTIVE_API_KEY:4}
+      config_value="${ACSH_ACTIVE_API_KEY:0:4}...${rest: -4}"
       echo -en "\e[32m${config_value}"
   fi
   echo -e "\e[0m"
 
-  if [[ -z $ACSH_API_KEY ]]; then
+  if [[ -z $ACSH_ACTIVE_API_KEY ]]; then
         echo
         echo -e "To set the API Key, run: \t\e[31mautocomplete config set api_key <your-api>\e[0m"
   else
