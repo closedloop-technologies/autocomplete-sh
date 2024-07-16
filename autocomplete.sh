@@ -675,7 +675,8 @@ api_key: $api_key
 model: gpt-4o
 temperature: 0.0
 endpoint: https://api.openai.com/v1/chat/completions
-# pricing from https://openai.com/api/pricing/
+# If pricing is outdated, submit issue: https://github.com/closedloop-technologies/autocomplete-sh/issues
+# Sources: https://openai.com/api/pricing/
 api_prompt_cost: 0.000005
 api_completion_cost: 0.000015
 
@@ -1041,7 +1042,6 @@ declare -A _autocomplete_modellist
 # https://openai.com/api/pricing/
 _autocomplete_modellist['gpt-4o']='{"pad":"_________________", "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o"}'
 _autocomplete_modellist['gpt-3.5-turbo-0125']='{"pad":"_____", "completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125"}'
-_autocomplete_modellist['gpt-3.5-turbo-instruct']='{"pad":"_", "completion_cost":0.0000020,"prompt_cost":0.0000015,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-instruct"}'
 
 # Function to display a menu and let the user select an option using arrow keys
 menu_selector() {
