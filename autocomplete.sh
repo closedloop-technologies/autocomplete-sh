@@ -405,7 +405,6 @@ openai_completion() {
         -H "x-api-key: $api_key" \
         --data "$payload")
     elif [[ "${ACSH_PROVIDER^^}" == "OLLAMA" ]]; then
-        echo "$payload" > ".payload.json"
         response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
         --data "$payload")
     else  # OpenAI and GROQ have the same API design
@@ -415,10 +414,8 @@ openai_completion() {
 		-d "$payload")
     fi
 
-    echo "$response" > ".response.txt"
     status_code=$(echo "$response" | tail -n1)
     response_body=$(echo "$response" | sed '$d')
-    echo "$response_body" > ".response_body.json"
 
 	if [[ $status_code -eq 200 ]]; then
         if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
