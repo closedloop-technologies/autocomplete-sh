@@ -657,12 +657,11 @@ show_help() {
 }
 
 show_config() {
-	local is_enabled config_file config_value
+	local config_file config_value
     local term_width small_table rest
 
-	is_enabled=$(check_if_enabled)
 	echo_green "Autocomplete.sh - Configuration and Settings - Version $ACSH_VERSION"
-	if [[ "$is_enabled" = "enabled" ]]; then
+	if check_if_enabled; then
 		# echo enabled in green
         echo -e "  STATUS: \033[32;5mEnabled\033[0m \033[0m"
 	else
@@ -999,12 +998,14 @@ remove_command() {
 }
 
 check_if_enabled() {
-	# run complete -p | grep _autocompletesh and if it returns a value, it is enabled
-	local is_enabled
-	is_enabled=$(complete -p | grep _autocompletesh)
-	if [ "$is_enabled" ]; then
-		echo "enabled"
-	fi
+    # Check if the autocompletion is enabled
+    local is_enabled
+    is_enabled=$(complete -p | grep _autocompletesh | grep -cv _autocompletesh_cli)
+    if [ "$is_enabled" -gt 0 ]; then
+        return 0  # True (enabled)
+    else
+        return 1  # False (not enabled)
+    fi
 }
 
 _autocompletesh_cli() {
@@ -1041,9 +1042,7 @@ model
 }
 
 enable_command() {
-	local is_enabled
-	is_enabled=$(check_if_enabled)
-	if [ "$is_enabled" ]; then
+	if check_if_enabled; then
 		echo_green "Autocomplete.sh - reloading"
 		disable_command
 	fi
@@ -1054,9 +1053,7 @@ enable_command() {
 
 disable_command() {
 	# Remove the completion function by installing the default completion function
-	local is_enabled
-	is_enabled=$(check_if_enabled)
-	if [ "$is_enabled" ]; then
+	if check_if_enabled; then
 		complete -F _completion_loader -D
 	fi
 }
@@ -1290,6 +1287,7 @@ model_command() {
           echo
       else
           export ACSH_ACTIVE_API_KEY="$user_api_key_input"
+          set_config "${ACSH_PROVIDER,,}_api_key" "$user_api_key_input"
       fi
   fi
 
