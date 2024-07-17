@@ -912,31 +912,6 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         mkdir -p "$HOME/.autocomplete"
     fi
 
-    # TODO select a model on install
-
-    # If OPENAI_API_KEY is not set, prompt the user to set it
-    if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
-        # PROMPT USER TO enter API KEY
-        echo_green "Autocomplete.sh - Installation"
-        echo "To install autocomplete.sh, you need an OpenAI API Key"
-        echo "This is stored locally in the ~/.autocomplete/config file"
-        echo "Create a new one here: https://platform.openai.com/settings/profile?tab=api-keys"
-
-        echo -n "Enter OpenAI API Key: "
-        read -sr user_api_key_input < /dev/tty
-        echo
-
-        if [[ -z "$user_api_key_input" ]]; then
-            echo_error "API Key not set"
-            echo -e "Please set it later using the following command: export OPENAI_API_KEY=<your-api-key>"
-            echo -e "or set it in the ~/.autocomplete/config configuration file via: autocomplete config set api_key <your-api-key>"
-        else
-            export ACSH_ACTIVE_API_KEY="$user_api_key_input"
-        fi
-    else
-        echo_green "OpenAPI key is loaded from the environment variable"
-    fi
-
     # Create $HOME/.autocomplete/cache/ if it does not exist
     local cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
     if [[ ! -d "$cache_dir" ]]; then
@@ -961,7 +936,11 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         echo -e "$autocomplete_cli_setup\n" >> "$bashrc_file"
         echo "Added autocomplete cli autocomplete to $bashrc_file"
     fi
-    echo "Completed installing autocomplete.sh"
+
+    model_command
+
+    echo -e "\e[1;34mAutocomplete.sh - Install Completed\e[0m"
+    echo
 }
 
 remove_command() {
@@ -1289,10 +1268,34 @@ model_command() {
   set_config "api_prompt_cost" "$prompt_cost"
   set_config "api_completion_cost" "$completion_cost"
 
+  if [[ -z "$ACSH_ACTIVE_API_KEY" && ${ACSH_PROVIDER^^} != "OLLAMA" ]]; then
+      # PROMPT USER TO enter API KEY
+      echo -e "\e[34mSet ${ACSH_PROVIDER^^}_API_KEY\e[0m"
+      echo
+      echo -e "This is stored locally here: \e[90m~/.autocomplete/config\e[0m"
+      echo
+      if [[ ${ACSH_PROVIDER^^} == "OPENAI" ]]; then
+          echo "Create a new one here: https://platform.openai.com/settings/profile?tab=api-keys"
+      elif [[ ${ACSH_PROVIDER^^} == "ANTHROPIC" ]]; then
+          echo "Create a new one here: https://console.anthropic.com/settings/keys"
+      elif [[ ${ACSH_PROVIDER^^} == "GROQ" ]]; then
+          echo "Create a new one here: https://console.groq.com/keys"
+      fi
+      echo
+      echo -n "Enter your ${ACSH_PROVIDER^^} API Key: "
+      read -sr user_api_key_input < /dev/tty
+      clear
+      echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+      if [[ -z "$user_api_key_input" ]]; then
+          echo
+      else
+          export ACSH_ACTIVE_API_KEY="$user_api_key_input"
+      fi
+  fi
+
   model="${ACSH_MODEL:-"ERROR"}"
   temperature=$(echo "${ACSH_TEMPERATURE:-0.0}" | awk '{printf "%.3f", $1}' )
 
-  echo
   echo -e "Provider:\t\e[90m$ACSH_PROVIDER\e[0m"
   echo -e "Model:\t\t\e[90m$model\e[0m"
   echo -e "Temperature:\t\e[90m$temperature\e[0m"
@@ -1305,30 +1308,34 @@ model_command() {
 
   if [[ -z $ACSH_ACTIVE_API_KEY ]]; then
       if [[ ${ACSH_PROVIDER^^} == "OLLAMA" ]]; then
-          echo -en "\e[90mNot Used\e[0m"
+          echo -e "\e[90mNot Used\e[0m"
       else
-          echo -en "\e[31mUNSET"
+          echo -e "\e[31mUNSET"
       fi
   else
       rest=${ACSH_ACTIVE_API_KEY:4}
       config_value="${ACSH_ACTIVE_API_KEY:0:4}...${rest: -4}"
       echo -en "\e[32m${config_value}"
   fi
-  echo -e "\e[0m"
+  echo -en "\e[0m"
 
   if [[ -z $ACSH_ACTIVE_API_KEY && ${ACSH_PROVIDER^^} != "OLLAMA" ]]; then
         echo
-        echo -e "To set the API Key, run:\t\e[31mautocomplete config set api_key <your-api>\e[0m"
+        echo "To set the API Key, run either:"
+        echo -e "\t\e[31mautocomplete config set api_key <your-api-key>\e[0m"
+        echo -e "\t\e[31mexport ${ACSH_PROVIDER^^}_API_KEY=<your-api-key>\e[0m"
   else
         echo
   fi
 
   if [[ ${ACSH_PROVIDER^^} == "OLLAMA" ]]; then
-        echo
-        echo -e "To set a custom endpoint:\t\e[34mautocomplete config set endpoint <your-url>\e[0m"
-        echo -e "Other models can be set:\t\e[34mautocomplete config set model <model-name>\e[0m"
+        echo "To set a custom endpoint:"
+        echo -e "\t\e[34mautocomplete config set endpoint <your-url>\e[0m"
+        echo "Other models can be set:"
+        echo -e "\t\e[34mautocomplete config set model <model-name>\e[0m"
   fi
-  echo -e "To change the temperature:\t\e[90mautocomplete config set temperature <temperature>\e[0m"
+  echo "To change the temperature:"
+  echo -e "\t\e[90mautocomplete config set temperature <temperature>\e[0m"
   echo
 }
 
