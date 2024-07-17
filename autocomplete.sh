@@ -1271,7 +1271,6 @@ model_command() {
   local selected_model options=()
 
   # Collect and sort the keys
-  # Collect and sort the keys
   mapfile -t sorted_keys < <(for key in "${!_autocomplete_modellist[@]}"; do echo "$key"; done | sort)
 
   for key in "${sorted_keys[@]}"; do
@@ -1308,7 +1307,11 @@ model_command() {
   echo -en "API Key:    \t"
 
   if [[ -z $ACSH_ACTIVE_API_KEY ]]; then
-      echo -en "\e[31mUNSET"
+      if [[ ${ACSH_PROVIDER^^} == "OLLAMA" ]]; then
+          echo -en "\e[90mNot Used\e[0m"
+      else
+          echo -en "\e[31mUNSET"
+      fi
   else
       rest=${ACSH_ACTIVE_API_KEY:4}
       config_value="${ACSH_ACTIVE_API_KEY:0:4}...${rest: -4}"
@@ -1316,13 +1319,20 @@ model_command() {
   fi
   echo -e "\e[0m"
 
-  if [[ -z $ACSH_ACTIVE_API_KEY ]]; then
+  if [[ -z $ACSH_ACTIVE_API_KEY && ${ACSH_PROVIDER^^} != "OLLAMA" ]]; then
         echo
-        echo -e "To set the API Key, run: \t\e[31mautocomplete config set api_key <your-api>\e[0m"
+        echo -e "To set the API Key, run:\t\e[31mautocomplete config set api_key <your-api>\e[0m"
   else
         echo
   fi
-  echo -e "To change the temperature, run: \e[90mautocomplete config set temperature <temperature>\e[0m"
+
+  if [[ ${ACSH_PROVIDER^^} == "OLLAMA" ]]; then
+        echo
+        echo -e "To set a custom endpoint:\t\e[34mautocomplete config set endpoint <your-url>\e[0m"
+        echo -e "Other models can be set:\t\e[34mautocomplete config set model <model-name>\e[0m"
+  fi
+  echo -e "To change the temperature:\t\e[90mautocomplete config set temperature <temperature>\e[0m"
+  echo
 }
 
 case "$1" in
