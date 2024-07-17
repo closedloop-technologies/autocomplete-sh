@@ -13,6 +13,23 @@ export ACSH_VERSION=0.3.0
 
 ###############################################################################
 #
+# SUPPORTED MODELS AND MODEL PRICING
+#
+###############################################################################
+
+declare -A _autocomplete_modellist
+# https://openai.com/api/pricing/
+
+_autocomplete_modellist['openai:\tgpt-4o']='{            "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o",             "provider":"openai"}'
+_autocomplete_modellist['openai:\tgpt-3.5-turbo-0125']='{"completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125", "provider":"openai"}'
+# https://docs.anthropic.com/en/docs/about-claude/models
+_autocomplete_modellist['anthropic:\tclaude-3-5-sonnet-20240620']='{"completion_cost":0.0000150,"prompt_cost":0.0000030,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-5-sonnet-20240620", "provider":"anthropic"}'
+_autocomplete_modellist['anthropic:\tclaude-3-opus-20240229']='{    "completion_cost":0.0000750,"prompt_cost":0.0000150,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-opus-20240229", "provider":"anthropic"}'
+_autocomplete_modellist['anthropic:\tclaude-3-haiku-20240307']='{   "completion_cost":0.00000125,"prompt_cost":0.00000025,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-haiku-20240307", "provider":"anthropic"}'
+
+
+###############################################################################
+#
 # FORMATTING FUNCTIONS
 #
 ###############################################################################
@@ -224,22 +241,21 @@ _build_payload() {
 	acsh_prompt+=$prompt
 	export ACSH_PROMPT=$acsh_prompt
 
-	payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
+    if [[ ${ACSH_PROVIDER^^} == "ANTHROPIC" ]]; then
+        payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
         model: $model,
+        system: $system_prompt,
         messages: [
-            {role: "system", content: $system_prompt},
             {role: "user", content: $prompt_content}
         ],
         temperature: ($temperature | tonumber),
-        response_format: { "type": "json_object" },
-        tool_choice: {"type": "function", "function": {"name": "bash_completions"}},
+        "max_tokens": 1024,
+        tool_choice: {"type": "tool", "name": "bash_completions"},
         tools:[
-        {
-            "type": "function",
-            "function": {
+            {
                 "name": "bash_completions",
                 "description": "syntacticly correct command-line suggestions based on the users input",
-                "parameters": {
+                "input_schema": {
                     "type": "object",
                     "properties": {
                         "commands": {
@@ -252,10 +268,43 @@ _build_payload() {
                     },
                     "required": ["commands"],
                 },
-            },
-        }
-    ]
-    }')
+            }
+        ]
+        }')
+    else
+        payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
+            model: $model,
+            messages: [
+                {role: "system", content: $system_prompt},
+                {role: "user", content: $prompt_content}
+            ],
+            temperature: ($temperature | tonumber),
+            response_format: { "type": "json_object" },
+            tool_choice: {"type": "function", "function": {"name": "bash_completions"}},
+            tools:[
+            {
+                "type": "function",
+                "function": {
+                    "name": "bash_completions",
+                    "description": "syntacticly correct command-line suggestions based on the users input",
+                    "parameters": {
+                        "type": "object",
+                        "properties": {
+                            "commands": {
+                                "type": "array",
+                                "items": {
+                                    "type": "string",
+                                    "description": "A suggested command"
+                                }
+                            },
+                        },
+                        "required": ["commands"],
+                    },
+                },
+            }
+        ]
+        }')
+    fi
 	echo "$payload"
 }
 
@@ -268,12 +317,22 @@ log_request() {
 
     user_input_hash=$(echo -n "$user_input" | md5sum | cut -d ' ' -f 1)
 
-    prompt_tokens=$(echo "$response_body" | jq -r '.usage.prompt_tokens')
-    prompt_tokens_int=$((prompt_tokens))
-    completion_tokens=$(echo "$response_body" | jq -r '.usage.completion_tokens')
-    completion_tokens_int=$((completion_tokens))
+    if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
+        prompt_tokens=$(echo "$response_body" | jq -r '.usage.input_tokens')
+        prompt_tokens_int=$((prompt_tokens))
+        completion_tokens=$(echo "$response_body" | jq -r '.usage.output_tokens')
+        completion_tokens_int=$((completion_tokens))
+    else
+        prompt_tokens=$(echo "$response_body" | jq -r '.usage.prompt_tokens')
+        prompt_tokens_int=$((prompt_tokens))
+        completion_tokens=$(echo "$response_body" | jq -r '.usage.completion_tokens')
+        completion_tokens_int=$((completion_tokens))
+    fi
 
-    created=$(echo "$response_body" | jq -r '.created')
+    # or set the created time to the current time
+    created=$(date +%s)
+    created=$(echo "$response_body" | jq -r ".created // $created")
+
     api_cost=$(echo "$prompt_tokens_int * $ACSH_API_PROMPT_COST + $completion_tokens_int * $ACSH_API_COMPLETION_COST" | bc)
 
     # Log the response (request time, response time, prompt tokens, completion tokens, completion time, completion length, completion tokens per second, completion tokens per prompt token, completion tokens per second per prompt token, completion tokens per second per completion token)
@@ -288,34 +347,51 @@ openai_completion() {
 
     #  Settings
     endpoint=${ACSH_ENDPOINT:-"https://api.openai.com/v1/chat/completions"}
+
+    # Add 30 second timeout to the curl command
     timeout=${ACSH_TIMEOUT:-30}
 
     # Inputs and Defaults
 	default_user_input="Write two to six most likely commands given the provided information"
 	user_input=${*:-$default_user_input}
 
-    # First check if the ACSH_ACTIVE_API_KEY is set else check if the OPENAI_API_KEY is set
+    # First check if the ACSH_ACTIVE_API_KEY is set
     if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
         echo ""
         echo_error "ACSH_ACTIVE_API_KEY not set"
-        echo -e "Please set it using the following command: \e[90mexport OPENAI_API_KEY=<your-api-key>\e[0m"
-        echo -e "or set it in the ~/.autocomplete/config configuration file via: \e[90mautocomplete config set OPENAI_API_KEY <your-api-key>\e[0m"
+        echo -e "Please set it using the following command: \e[90mexport ${ACSH_PROVIDER^^}_API_KEY=<your-api-key>\e[0m"
+        echo -e "or set it in the ~/.autocomplete/config configuration file via: \e[90mautocomplete config set ${ACSH_PROVIDER^^}_API_KEY <your-api-key>\e[0m"
         return
     fi
     api_key="${ACSH_ACTIVE_API_KEY:-$OPENAI_API_KEY}"
 	payload=$(_build_payload "$user_input")
 
-    # Add 30 second timeout to the curl command
-	response=$(\curl -s -m "$timeout" -w "%{http_code}" "$endpoint" \
+    if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
+        response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
+        -H "content-type: application/json" \
+        -H "anthropic-version: 2023-06-01" \
+        -H "x-api-key: $api_key" \
+        --data "$payload")
+    elif [[ "${ACSH_PROVIDER^^}" == "GROQ" ]]; then
+        return 1 # "GROQ is not supported yet"
+    else
+        response=$(\curl -s -m "$timeout" -w "%{http_code}" "$endpoint" \
 		-H "Content-Type: application/json" \
 		-H "Authorization: Bearer $api_key" \
 		-d "$payload")
+    fi
 
-	status_code=$(echo "$response" | tail -n1)
-	response_body=$(echo "$response" | sed '$d')
+    status_code=$(echo "$response" | tail -n1)
+    response_body=$(echo "$response" | sed '$d')
+
 	if [[ $status_code -eq 200 ]]; then
-		content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
-		content=$(echo "$content" | jq -r '.commands')
+        echo "$response_body" > ".response_body.json"
+        if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
+            content=$(echo "$response_body" | jq -r '.content[0].input.commands')
+        else
+            content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
+            content=$(echo "$content" | jq -r '.commands')
+        fi
 
 		# Map the commands to a list of completions and remove empty lines
 		completions=$(echo "$content" | jq -r '.[]' | grep -v '^$')
@@ -339,7 +415,7 @@ openai_completion() {
 			echo_error "Internal Server Error: An unexpected error occurred on the API server."
 			;;
 		*)
-			echo_error "Unknown Error: Unexpected status code $status_code received from the API - $response_body"
+			echo_error "Unknown Error: Unexpected status code $status_code received from the API - $response_body \n$payload"
 			;;
 		esac
 	fi
@@ -1092,11 +1168,6 @@ get_key() {
   fi
 }
 
-declare -A _autocomplete_modellist
-# https://openai.com/api/pricing/
-_autocomplete_modellist['openai:\tgpt-4o']='{"pad":"_________________", "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o", "provider":"openai"}'
-_autocomplete_modellist['openai:\tgpt-3.5-turbo-0125']='{"pad":"_____", "completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125", "provider":"openai"}'
-
 # Function to display a menu and let the user select an option using arrow keys
 menu_selector() {
 
@@ -1166,7 +1237,7 @@ model_command() {
   echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
   selected_model="${options[selected_option]}"
   selected_value="${_autocomplete_modellist[$selected_model]}"
-  set_config "model" "$selected_model"
+  set_config "model" "$(echo "$selected_value" | jq -r '.model')"
   set_config "endpoint" "$(echo "$selected_value" | jq -r '.endpoint')"
   set_config "provider" "$(echo "$selected_value" | jq -r '.provider')"
 
