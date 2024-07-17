@@ -16,7 +16,7 @@ export ACSH_VERSION=0.3.0
 # SUPPORTED MODELS AND MODEL PRICING
 #
 ###############################################################################
-
+unset _autocomplete_modellist
 declare -A _autocomplete_modellist
 # https://openai.com/api/pricing/
 
@@ -1374,6 +1374,10 @@ command)
 	command_command "$@"
 	;;
 *)
-	echo_error "Unknown command $1 - run \`autocomplete --help\` or goto https://autocomplete.sh for more information"
+    if [[ -n "$1" ]]; then
+        echo_error "Unknown command $1 - run \`autocomplete --help\` or goto https://autocomplete.sh for more information"
+    else
+        echo_green "Autocomplete.sh - LLM Powered Bash Completion - Version $ACSH_VERSION - https://autocomplete.sh"
+    fi
 	;;
 esac
