@@ -28,11 +28,14 @@ _autocomplete_modellist['anthropic:\tclaude-3-opus-20240229']='{    "completion_
 _autocomplete_modellist['anthropic:\tclaude-3-haiku-20240307']='{   "completion_cost":0.00000125,"prompt_cost":0.00000025,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-haiku-20240307", "provider":"anthropic"}'
 
 # https://console.groq.com/docs/models
-_autocomplete_modellist['groq:\t\tllama3-8b-8192']='{  "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",     "model":"llama3-8b-8192", "provider":"groq"}'
-_autocomplete_modellist['groq:\t\tllama3-70b-8192']='{ "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions","model":"llama3-70b-8192", "provider":"groq"}'
-_autocomplete_modellist['groq:\t\tmixtral-8x7b-32768']='{                    "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                  "model":"mixtral-8x7b-32768", "provider":"groq"}'
-_autocomplete_modellist['groq:\t\tgemma-7b-it']='{                           "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                         "model":"gemma-7b-it", "provider":"groq"}'
-_autocomplete_modellist['groq:\t\tgemma2-9b-it']='{                          "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                        "model":"gemma2-9b-it", "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tllama3-8b-8192']='{  "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                       "model":"llama3-8b-8192",     "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tllama3-70b-8192']='{ "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                       "model":"llama3-70b-8192",    "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tmixtral-8x7b-32768']='{                    "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions", "model":"mixtral-8x7b-32768", "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tgemma-7b-it']='{                           "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions", "model":"gemma-7b-it",        "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tgemma2-9b-it']='{                          "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions", "model":"gemma2-9b-it",       "provider":"groq"}'
+
+# https://github.com/ollama/ollama/tree/main?tab=readme-ov-file#model-library
+_autocomplete_modellist['ollama:\tcodellama']='{                          "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"http://localhost:11434/api/chat",                        "model":"codellama", "provider":"ollama"}'
 
 ###############################################################################
 #
@@ -287,6 +290,19 @@ _build_payload() {
             temperature: ($temperature | tonumber),
             response_format: { "type": "json_object" }
         }')
+    elif [[ ${ACSH_PROVIDER^^} == "OLLAMA" ]]; then
+        payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
+            model: $model,
+            system: $system_prompt,
+            messages: [
+                {role: "user", content: $prompt_content}
+            ],
+            "format": "json",
+            stream: false,
+            "options": {
+                "temperature": ($temperature | tonumber),
+            }
+        }')
     else
         payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
             model: $model,
@@ -372,7 +388,7 @@ openai_completion() {
 	user_input=${*:-$default_user_input}
 
     # First check if the ACSH_ACTIVE_API_KEY is set
-    if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
+    if [[ -z "$ACSH_ACTIVE_API_KEY" && ${ACSH_PROVIDER^^} != "OLLAMA" ]]; then
         echo ""
         echo_error "ACSH_ACTIVE_API_KEY not set"
         echo -e "Please set it using the following command: \e[90mexport ${ACSH_PROVIDER^^}_API_KEY=<your-api-key>\e[0m"
@@ -388,8 +404,10 @@ openai_completion() {
         -H "anthropic-version: 2023-06-01" \
         -H "x-api-key: $api_key" \
         --data "$payload")
-    elif [[ "${ACSH_PROVIDER^^}" == "CUSTOM" ]]; then
-        return 1 # "CUSTOM is not supported yet"
+    elif [[ "${ACSH_PROVIDER^^}" == "OLLAMA" ]]; then
+        echo "$payload" > ".payload.json"
+        response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
+        --data "$payload")
     else  # OpenAI and GROQ have the same API design
         response=$(\curl -s -m "$timeout" -w "%{http_code}" "$endpoint" \
 		-H "Content-Type: application/json" \
@@ -397,9 +415,9 @@ openai_completion() {
 		-d "$payload")
     fi
 
+    echo "$response" > ".response.txt"
     status_code=$(echo "$response" | tail -n1)
     response_body=$(echo "$response" | sed '$d')
-
     echo "$response_body" > ".response_body.json"
 
 	if [[ $status_code -eq 200 ]]; then
@@ -407,6 +425,9 @@ openai_completion() {
             content=$(echo "$response_body" | jq -r '.content[0].input.commands')
         elif [[ "${ACSH_PROVIDER^^}" == "GROQ" ]]; then
             content=$(echo "$response_body" | jq -r '.choices[0].message.content')
+            content=$(echo "$content" | jq -r '.completions')
+        elif [[ "${ACSH_PROVIDER^^}" == "OLLAMA" ]]; then
+            content=$(echo "$response_body" | jq -r '.message.content')
             content=$(echo "$content" | jq -r '.completions')
         else
             content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
@@ -862,7 +883,7 @@ load_config() {
             "groq")
                 export ACSH_ACTIVE_API_KEY="$ACSH_GROQ_API_KEY"
                 ;;
-            "custom")
+            "ollama")
                 export ACSH_ACTIVE_API_KEY="$ACSH_CUSTOM_API_KEY"
                 ;;
             *)
