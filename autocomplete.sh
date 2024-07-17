@@ -27,6 +27,12 @@ _autocomplete_modellist['anthropic:\tclaude-3-5-sonnet-20240620']='{"completion_
 _autocomplete_modellist['anthropic:\tclaude-3-opus-20240229']='{    "completion_cost":0.0000750,"prompt_cost":0.0000150,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-opus-20240229", "provider":"anthropic"}'
 _autocomplete_modellist['anthropic:\tclaude-3-haiku-20240307']='{   "completion_cost":0.00000125,"prompt_cost":0.00000025,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-haiku-20240307", "provider":"anthropic"}'
 
+# https://console.groq.com/docs/models
+_autocomplete_modellist['groq:\t\tllama3-8b-8192']='{  "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",     "model":"llama3-8b-8192", "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tllama3-70b-8192']='{ "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions","model":"llama3-70b-8192", "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tmixtral-8x7b-32768']='{                    "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                  "model":"mixtral-8x7b-32768", "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tgemma-7b-it']='{                           "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                         "model":"gemma-7b-it", "provider":"groq"}'
+_autocomplete_modellist['groq:\t\tgemma2-9b-it']='{                          "completion_cost":0.0000000,"prompt_cost":0.0000000,"endpoint":"https://api.groq.com/openai/v1/chat/completions",                        "model":"gemma2-9b-it", "provider":"groq"}'
 
 ###############################################################################
 #
@@ -271,6 +277,16 @@ _build_payload() {
             }
         ]
         }')
+    elif [[ ${ACSH_PROVIDER^^} == "GROQ" ]]; then
+        payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
+            model: $model,
+            messages: [
+                {role: "system", content: $system_prompt},
+                {role: "user", content: $prompt_content}
+            ],
+            temperature: ($temperature | tonumber),
+            response_format: { "type": "json_object" }
+        }')
     else
         payload=$(jq -cn --arg model "$model" --arg temperature "$temperature" --arg system_prompt "$system_message_prompt" --arg prompt_content "$prompt" '{
             model: $model,
@@ -372,9 +388,9 @@ openai_completion() {
         -H "anthropic-version: 2023-06-01" \
         -H "x-api-key: $api_key" \
         --data "$payload")
-    elif [[ "${ACSH_PROVIDER^^}" == "GROQ" ]]; then
-        return 1 # "GROQ is not supported yet"
-    else
+    elif [[ "${ACSH_PROVIDER^^}" == "CUSTOM" ]]; then
+        return 1 # "CUSTOM is not supported yet"
+    else  # OpenAI and GROQ have the same API design
         response=$(\curl -s -m "$timeout" -w "%{http_code}" "$endpoint" \
 		-H "Content-Type: application/json" \
 		-H "Authorization: Bearer $api_key" \
@@ -384,10 +400,14 @@ openai_completion() {
     status_code=$(echo "$response" | tail -n1)
     response_body=$(echo "$response" | sed '$d')
 
+    echo "$response_body" > ".response_body.json"
+
 	if [[ $status_code -eq 200 ]]; then
-        echo "$response_body" > ".response_body.json"
         if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
             content=$(echo "$response_body" | jq -r '.content[0].input.commands')
+        elif [[ "${ACSH_PROVIDER^^}" == "GROQ" ]]; then
+            content=$(echo "$response_body" | jq -r '.choices[0].message.content')
+            content=$(echo "$content" | jq -r '.completions')
         else
             content=$(echo "$response_body" | jq -r '.choices[0].message.tool_calls[0].function.arguments')
             content=$(echo "$content" | jq -r '.commands')
@@ -1227,8 +1247,13 @@ menu_selector() {
 # Example function to demonstrate using the menu_selector
 model_command() {
   clear
-  local selected_model, options=()
-  for key in "${!_autocomplete_modellist[@]}"; do
+  local selected_model options=()
+
+  # Collect and sort the keys
+  # Collect and sort the keys
+  mapfile -t sorted_keys < <(for key in "${!_autocomplete_modellist[@]}"; do echo "$key"; done | sort)
+
+  for key in "${sorted_keys[@]}"; do
       options+=("$key")
   done
   echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
