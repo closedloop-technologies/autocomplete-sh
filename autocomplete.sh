@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.3.0
+export ACSH_VERSION=0.3.1
 
 ###############################################################################
 #
@@ -20,8 +20,9 @@ unset _autocomplete_modellist
 declare -A _autocomplete_modellist
 # https://openai.com/api/pricing/
 
-_autocomplete_modellist['openai:\tgpt-4o']='{            "completion_cost":0.0000150,"prompt_cost":0.0000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o",             "provider":"openai"}'
-_autocomplete_modellist['openai:\tgpt-3.5-turbo-0125']='{"completion_cost":0.0000015,"prompt_cost":0.0000005,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125", "provider":"openai"}'
+_autocomplete_modellist['openai:\tgpt-4o']='{            "completion_cost":0.0000150,"prompt_cost":0.00000500,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o",             "provider":"openai"}'
+_autocomplete_modellist['openai:\tgpt-4o-mini']='{       "completion_cost":0.0000006,"prompt_cost":0.00000015,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-4o-mini", "provider":"openai"}'
+_autocomplete_modellist['openai:\tgpt-3.5-turbo-0125']='{"completion_cost":0.0000015,"prompt_cost":0.00000050,"endpoint":"https://api.openai.com/v1/chat/completions","model":"gpt-3.5-turbo-0125", "provider":"openai"}'
 # https://docs.anthropic.com/en/docs/about-claude/models
 _autocomplete_modellist['anthropic:\tclaude-3-5-sonnet-20240620']='{"completion_cost":0.0000150,"prompt_cost":0.0000030,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-5-sonnet-20240620", "provider":"anthropic"}'
 _autocomplete_modellist['anthropic:\tclaude-3-opus-20240229']='{    "completion_cost":0.0000750,"prompt_cost":0.0000150,"endpoint":"https://api.anthropic.com/v1/messages","model":"claude-3-opus-20240229", "provider":"anthropic"}'
