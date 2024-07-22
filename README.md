@@ -166,6 +166,13 @@ Tests via Bats
     sudo apt install bats
     bats tests
 
+Test Installation
+
+    docker build -t autocomplete-sh .
+    docker run -it autocomplete-sh
+    . autocomplete.sh install
+    autocomplete --help
+
 ### Inspiration
 
  * [NVM](https://github.com/nvm-sh/nvm/tree/master)
