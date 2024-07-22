@@ -681,7 +681,8 @@ show_config() {
         echo -e "  STATUS: \033[32;5mEnabled\033[0m \033[0m"
 	else
 		# echo disabled in red
-        echo -e "  STATUS: \033[31;5mDisabled\033[0m \033[0m"
+        echo -e "  STATUS: \033[31;5mDisabled\033[0m \033[0m- WARNING might be a false negative.  Make sure to"
+        echo -e "  run \033[33;5msource autocomplete config\033[0m to confirm if autocomplete disabled"
 	fi
 	config_file="$HOME/.autocomplete/config"
 	if [ ! -f "$config_file" ]; then
