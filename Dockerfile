@@ -6,7 +6,7 @@ LABEL maintainer="sean@closedloop.tech"
 
 # Update the package list and install wget and bash
 RUN apt-get update && \
-    apt-get install -y wget bash jq bash-completion vim bats && \
+    apt-get install -y bash curl wget jq bash-completion vim bats && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/*
 

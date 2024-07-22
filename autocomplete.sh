@@ -530,7 +530,7 @@ _autocompletesh() {
 		local user_input
         local user_input_hash
 
-        load_config
+        acsh_load_config
 
         # CHECK API KEY is set
         if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
@@ -675,7 +675,7 @@ show_config() {
 		echo_error "Run autocomplete install"
 		return
 	fi
-    load_config
+    acsh_load_config
     echo
     term_width=$(tput cols)
     if [[ term_width -gt 70 ]]; then
@@ -758,7 +758,7 @@ set_config() {
     sed -i "s|^\($key:\).*|\1 $value|" "$config_file"
 
     # Display the new value by loading the config
-    load_config
+    acsh_load_config
 }
 
 # Function to handle config commands
@@ -842,7 +842,7 @@ log_file: $HOME/.autocomplete/autocomplete.log"
     fi
 }
 
-load_config() {
+acsh_load_config() {
     local config_file key value
 
     config_file="$HOME/.autocomplete/config"
@@ -937,7 +937,7 @@ Please follow the install instructions on https://github.com/closedloop-technolo
 
     # $HOME/.autocomplete/config
     build_config
-    load_config
+    acsh_load_config
 
     # Append autocomplete.sh setup to .bashrc if it doesn't exist
     if ! grep -qF "$autocomplete_setup" "$bashrc_file"; then
@@ -1094,7 +1094,7 @@ enable_command() {
 		disable_command
 	fi
     # shellcheck source=autocomplete.sh
-    . load_config
+    acsh_load_config
 	# Set as the default completion function (-D )
 	# Also enable for empty commands (-E)
 	complete -D -E -F _autocompletesh -o nospace
@@ -1123,7 +1123,7 @@ command_command() {
 clear_command() {
     # Clear the cache directory and log file
     local cache_dir log_file
-    load_config
+    acsh_load_config
     cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
     log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"}
 
