@@ -14,15 +14,15 @@ wget -qO- https://autocomplete.sh/install.sh | bash
 
 ## How it works
 
-< Insert GIF of Usecases >
+![How it works](docs/images/intro_example.mp4)
 
-It's **faster** than copy-pasting from Stack Overflow and ChatGPT.  
+It's **faster** than copy-pasting from Stack Overflow and ChatGPT.
 
 The suggestions are **more accurate** since we've engineered the prompts to contain limited information of your terminal's state including:
  * What kind of machine you are using: `$USER, $PWD, $OLDPWD, $HOME, $OSTYPE, $BASH, $TERM, $HOSTNAME`
  * `env` - Which variables are defined (but just the names and not the values)
  * `history` - Recently executed commands
- * `ls` - Recently modified files in the current directory 
+ * `ls` - Recently modified files in the current directory
  * `--help` - any additional help information for the current command
 
 If you are curious, you can see the full prompt using
@@ -31,7 +31,7 @@ autocomplete command --dry-run "anything you want here"
 ```
 [Pull Requests](https://github.com/closedloop-technologies/autocomplete-sh/pulls) are welcome if you want to make it better!
 
-By default we cache the last 20 requests to reduce latency and costs.  
+By default we cache the last 20 requests to reduce latency and costs.
 
 ### Support Open Source
 Although writing 1,049 lines of bash was its own "reward", if you tried it and love it please show your support here!
@@ -60,12 +60,12 @@ autocomplete usage
 ```
 < TODO INSERT PICTURE OF USAGE>
 
-The average cost for me is about half a penny per request using the latest **gpt-4-omni** model. 
+The average cost for me is about half a penny per request using the latest **gpt-4-omni** model.
 
-The next section has instructions for the lower cost **gpt-3.5-turbo** model. 
+The next section has instructions for the lower cost **gpt-3.5-turbo** model.
 
 ### Model Selection GPT-3.5-turbo Settings
-GPT 3.5 has a lower cost model that is still quite effective.  
+GPT 3.5 has a lower cost model that is still quite effective.
 It costs about 10-20 calls per $0.01
 
 Run the following commands to switch to the lower cost model
