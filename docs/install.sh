@@ -4,7 +4,7 @@
 # This install script downloads the latest version of the LLMs
 
 # The URL of the latest version of the LLMs
-ACSH_VERSION="0.3.2"
+ACSH_VERSION="0.3.3"
 URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v${ACSH_VERSION}/autocomplete.sh"
 
 # The default location to install the LLMs
@@ -30,7 +30,7 @@ if ! command -v jq &> /dev/null; then
 fi
 
 # Check if the _init_completion function exists
-if ! command -v _init_completion &> /dev/null; then
+if ! type -t _init_completion &> /dev/null; then
     echo "ERROR: Please ensure you have bash-completion installed and sourced."
 else
     "$INSTALL_LOCATION" install
