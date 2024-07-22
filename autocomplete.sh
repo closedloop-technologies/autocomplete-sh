@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.3.4
+export ACSH_VERSION=0.3.5
 
 ###############################################################################
 #
@@ -864,10 +864,27 @@ load_config() {
             key=${key//[^[:alnum:]]/_}
 
             # Set the variable dynamically if it's not api_key or if api_key is not empty
-            if [[ $key != "api_key" ]] || [[ -n $value ]]; then
+            if [[ -n $value ]]; then
                 export "ACSH_$key"="$value"
             fi
         done < "$config_file"
+
+        # Assign the API keys
+        if [[ -z "$ACSH_OPENAI_API_KEY" && -n "$OPENAI_API_KEY" ]]; then
+            export ACSH_OPENAI_API_KEY="$OPENAI_API_KEY"
+        fi
+        # Anthropic
+        if [[ -z "$ACSH_ANTHROPIC_API_KEY" && -n "$ANTHROPIC_API_KEY" ]]; then
+            export ACSH_ANTHROPIC_API_KEY="$ANTHROPIC_API_KEY"
+        fi
+        # Groq
+        if [[ -z "$ACSH_GROQ_API_KEY" && -n "$GROQ_API_KEY" ]]; then
+            export ACSH_GROQ_API_KEY="$GROQ_API_KEY"
+        fi
+        # Ollama
+        if [[ -z "$ACSH_CUSTOM_API_KEY" && -n "$LLM_API_KEY" ]]; then
+            export ACSH_CUSTOM_API_KEY="$LLM_API_KEY"
+        fi
 
         # Now assign ACSH_ACTIVE_API_KEY based on ACSH_PROVIDER
         case "${ACSH_PROVIDER:-openai}" in
@@ -881,7 +898,7 @@ load_config() {
                 export ACSH_ACTIVE_API_KEY="$ACSH_GROQ_API_KEY"
                 ;;
             "ollama")
-                export ACSH_ACTIVE_API_KEY="$ACSH_CUSTOM_API_KEY"
+                export ACSH_ACTIVE_API_KEY="$ACSH_OLLAMA_API_KEY"
                 ;;
             *)
                 echo_error "Unknown provider: $ACSH_PROVIDER"
@@ -920,6 +937,7 @@ Please follow the install instructions on https://github.com/closedloop-technolo
 
     # $HOME/.autocomplete/config
     build_config
+    load_config
 
     # Append autocomplete.sh setup to .bashrc if it doesn't exist
     if ! grep -qF "$autocomplete_setup" "$bashrc_file"; then
@@ -1253,18 +1271,31 @@ model_command() {
   clear
   local selected_model options=()
 
-  # Collect and sort the keys
-  mapfile -t sorted_keys < <(for key in "${!_autocomplete_modellist[@]}"; do echo "$key"; done | sort)
+  if [[ $# -ne 3 ]]; then
+    # Collect and sort the keys
+    mapfile -t sorted_keys < <(for key in "${!_autocomplete_modellist[@]}"; do echo "$key"; done | sort)
 
-  for key in "${sorted_keys[@]}"; do
-      options+=("$key")
-  done
-  echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
-  menu_selector "${options[@]}"
-  selected_option=$?
-  echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
-  selected_model="${options[selected_option]}"
-  selected_value="${_autocomplete_modellist[$selected_model]}"
+    for key in "${sorted_keys[@]}"; do
+        options+=("$key")
+    done
+
+    echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+    menu_selector "${options[@]}"
+    selected_option=$?
+    echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+    selected_model="${options[selected_option]}"
+    selected_value="${_autocomplete_modellist[$selected_model]}"
+  else
+    provider="$2"
+    model_name="$3"
+    selected_value="${_autocomplete_modellist["$provider:\t$model_name"]}"
+
+    if [[ -z "$selected_value" ]]; then
+        echo "ERROR: Invalid provider or model name."
+        return 1
+    fi
+  fi
+
   set_config "model" "$(echo "$selected_value" | jq -r '.model')"
   set_config "endpoint" "$(echo "$selected_value" | jq -r '.endpoint')"
   set_config "provider" "$(echo "$selected_value" | jq -r '.provider')"
@@ -1367,7 +1398,7 @@ usage)
     usage_command
     ;;
 model)
-    model_command
+    model_command "$@"
     ;;
 config)
 	config_command "$@"

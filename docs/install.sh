@@ -4,8 +4,9 @@
 # This install script downloads the latest version of the LLMs
 
 # The URL of the latest version of the LLMs
-ACSH_VERSION="0.3.4"
-URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v${ACSH_VERSION}/autocomplete.sh"
+ACSH_VERSION="v0.3.4"
+BRANCH_OR_VERSION=${1:-$ACSH_VERSION}
+URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/${BRANCH_OR_VERSION}/autocomplete.sh"
 
 # The default location to install the LLMs
 INSTALL_LOCATION="$HOME/.local/bin/autocomplete"

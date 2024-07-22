@@ -169,8 +169,16 @@ Tests via Bats
 Test Installation
 
     docker build -t autocomplete-sh .
-    docker run -it autocomplete-sh
-    . autocomplete.sh install
+
+    # To run tests
+    docker run --rm -e OPENAI_API_KEY=$OPENAI_API_KEY autocomplete-sh
+
+    # To use the autocomplete
+    docker run --rm -it \
+       -e OPENAI_API_KEY=$OPENAI_API_KEY \
+       --entrypoint /bin/bash \
+       autocomplete-sh
+
     autocomplete --help
 
 ### Inspiration
