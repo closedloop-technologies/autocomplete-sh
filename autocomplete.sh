@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.3.5
+export ACSH_VERSION=0.4.0
 
 ###############################################################################
 #
@@ -657,12 +657,26 @@ show_help() {
 	echo "For more information, visit: https://autocomplete.sh"
 }
 
+# Function to check if running in a subshell
+is_subshell() {
+    if [[ "$$" != "$BASHPID" ]]; then
+        return 0
+    else
+        return 1
+    fi
+}
+
 show_config() {
 	local config_file config_value
     local term_width small_table rest
 
 	echo_green "Autocomplete.sh - Configuration and Settings - Version $ACSH_VERSION"
-	if check_if_enabled; then
+
+    if is_subshell; then
+        echo -e "  STATUS: \033[33;5mUnknown\033[0m \033[0m"
+        echo -e "  Run \033[33;5msource autocomplete config\033[0m to see if autocomplete is enabled"
+        return
+    elif check_if_enabled; then
 		# echo enabled in green
         echo -e "  STATUS: \033[32;5mEnabled\033[0m \033[0m"
 	else
