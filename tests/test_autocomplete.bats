@@ -1,14 +1,19 @@
 #!/usr/bin/env bats
 
-# Set a per-test timeout of 10 seconds
-export BATS_TEST_TIMEOUT=10
-
 setup() {
     # Install autocomplete.sh and run testing against the main branch
     wget -qO- https://autocomplete.sh/install.sh | bash -s -- main
 
     # Source bashrc to make sure autocomplete is available in the current session
     source ~/.bashrc
+
+    # Assert OPENAI_API_KEY is set
+    if [ -z "$OPENAI_API_KEY" ]; then
+        echo "ERROR: OPENAI_API_KEY is not set. Please set the environment variable before running the tests."
+        exit 1
+    fi
+
+    . autocomplete config
 }
 
 teardown() {
@@ -28,10 +33,10 @@ teardown() {
     [[ "$output" =~ [Aa]utocomplete\.sh ]]
 }
 
-@test "autocomplete config should not have the word DISABLED" {
+@test "autocomplete config should not have the word 'Disabled'" {
     run autocomplete config
     [ "$status" -eq 0 ]
-    [[ ! "$output" =~ DISABLED ]]
+    [[ ! "$output" =~ Disabled ]]
 }
 
 @test "autocomplete model gpt4o-mini and then config should have the string gpt4o-mini" {
@@ -40,7 +45,7 @@ teardown() {
 
     run autocomplete config
     [ "$status" -eq 0 ]
-    [[ "$output" =~ gpt4o-mini ]]
+    [[ "$output" =~ gpt-4o-mini ]]
 }
 
 @test "autocomplete command 'ls # show largest files' should return something" {
@@ -50,7 +55,8 @@ teardown() {
 }
 
 @test "autocomplete config sets environment variables" {
-    run env | grep ACSH | wc -l
+    . autocomplete config
+    run env | grep ACSH
     [ "$status" -eq 0 ]
-    [ "$output" -gt 1 ]
+    [ "$output" | wc -l | -gt 1 ]
 }

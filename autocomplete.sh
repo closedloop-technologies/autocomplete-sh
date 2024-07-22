@@ -959,9 +959,10 @@ Please follow the install instructions on https://github.com/closedloop-technolo
     echo_green "Autocomplete.sh - LLM Powered Bash Completion - Version $ACSH_VERSION"
     echo -e "\e[1;34mInstall Completed\e[0m"
     echo
-    echo "Two more commands to run steps to complete the installation:"
+    echo "Three quick commands to run to complete the installation:"
     echo -e "1. $ \e[1;34msource $bashrc_file\e[0m to enable autocomplete"
-    echo -e "2. $ \e[1;34mautocomplete model\e[0m \tto select the language model"
+    echo -e "2. $ \e[1;34msource autocomplete config\e[0m to load environment variables"
+    echo -e "3. $ \e[1;34mautocomplete model\e[0m \tto select the language model"
     echo
     echo -e "$ \e[1;30mautocomplete config\e[0m \tto view settings"
     echo -e "$ \e[1;30mautocomplete --help\e[0m \tfor additional commands"
@@ -1019,6 +1020,18 @@ remove_command() {
             sed -i '/autocomplete/d' "$bashrc_file"
 
             echo "Removed autocomplete.sh setup from $bashrc_file"
+        fi
+    fi
+
+    # Determine where the autocomplete script is located and prompt user to remove it
+    local autocomplete_script
+    autocomplete_script=$(command -v autocomplete)
+    if [ -n "$autocomplete_script" ]; then
+        echo "The autocomplete script is located at: $autocomplete_script"
+        read -r -p "Do you want to remove the autocomplete script? (y/n): " confirm
+        if [[ $confirm == "y" ]]; then
+            rm "$autocomplete_script"
+            echo "Removed: $autocomplete_script"
         fi
     fi
 
