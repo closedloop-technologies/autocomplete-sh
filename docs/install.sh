@@ -20,4 +20,18 @@ wget -nv -O "$INSTALL_LOCATION" "$URL"
 
 # Install the LLMs
 chmod +x "$INSTALL_LOCATION"
-"$INSTALL_LOCATION" install
+
+# Check if jq is installed
+if ! command -v jq &> /dev/null; then
+    echo "ERROR: jq is not installed. Please install jq to continue."
+    echo "For Ubuntu/Debian: sudo apt-get install jq"
+    echo "For CentOS/RHEL: sudo yum install jq"
+    echo "For macOS (using Homebrew): brew install jq"
+fi
+
+# Check if the _init_completion function exists
+if ! command -v _init_completion &> /dev/null; then
+    echo "ERROR: Please ensure you have bash-completion installed and sourced."
+else
+    "$INSTALL_LOCATION" install
+fi
