@@ -14,7 +14,7 @@ wget -qO- https://autocomplete.sh/install.sh | bash
 
 ## How it works
 
-![How it works](https://github.com/closedloop-technologies/autocomplete-sh/blob/main/docs/images/intro_example.mp4)
+![How it works](https://github.com/closedloop-technologies/autocomplete-sh/raw/main/docs/images/intro_example.mp4)
 
 It's **faster** than copy-pasting from Stack Overflow and ChatGPT.
 
