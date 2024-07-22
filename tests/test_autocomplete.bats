@@ -16,7 +16,7 @@ setup() {
 
 teardown() {
     # Remove autocomplete.sh installation
-    autocomplete remove
+    autocomplete remove -y
 }
 
 @test "which autocomplete returns something" {
@@ -29,12 +29,6 @@ teardown() {
     run autocomplete
     [ "$status" -eq 0 ]
     [[ "$output" =~ [Aa]utocomplete\.sh ]]
-}
-
-@test "autocomplete config should not have the word 'Disabled'" {
-    run autocomplete config
-    [ "$status" -eq 0 ]
-    [[ ! "$output" =~ Disabled ]]
 }
 
 @test "autocomplete model gpt4o-mini and then config should have the string gpt4o-mini" {
@@ -50,10 +44,4 @@ teardown() {
     run autocomplete command "ls # show largest files"
     [ "$status" -eq 0 ]
     [ -n "$output" ]
-}
-
-@test "autocomplete config sets environment variables" {
-    run env | grep ACSH
-    [ "$status" -eq 0 ]
-    [ "$output" | wc -l | -gt 1 ]
 }

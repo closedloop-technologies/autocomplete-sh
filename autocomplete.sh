@@ -1027,10 +1027,17 @@ remove_command() {
     autocomplete_script=$(command -v autocomplete)
     if [ -n "$autocomplete_script" ]; then
         echo "The autocomplete script is located at: $autocomplete_script"
-        read -r -p "Do you want to remove the autocomplete script? (y/n): " confirm
-        if [[ $confirm == "y" ]]; then
+
+        # If remove_command is called with the -y flag, remove the autocomplete script
+        if [ "$1" == "-y" ]; then
             rm "$autocomplete_script"
             echo "Removed: $autocomplete_script"
+        else
+            read -r -p "Do you want to remove the autocomplete script? (y/n): " confirm
+            if [[ $confirm == "y" ]]; then
+                rm "$autocomplete_script"
+                echo "Removed: $autocomplete_script"
+            fi
         fi
     fi
 
@@ -1403,7 +1410,7 @@ install)
 	install_command
 	;;
 remove)
-	remove_command
+	remove_command "$@"
 	;;
 clear)
 	clear_command
