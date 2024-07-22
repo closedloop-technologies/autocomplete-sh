@@ -4,7 +4,7 @@ Autocomplete.sh
 
 `autocomplete` adds intelligent command-line suggestions  for you directly in the terminal.  Just type <TAB><TAB> and it calls an LLM (OpenAI by default) and returns the top suggestions for you.
 
-< Insert Small GIF cursor turning green and outputing >
+https://github.com/user-attachments/assets/3555cbe1-cb45-48b8-8489-06b271ab0e3b
 
 ## Installation
 
@@ -13,8 +13,6 @@ wget -qO- https://autocomplete.sh/install.sh | bash
 ```
 
 ## How it works
-
-![How it works](https://autocomplete.sh/images/intro_example.mp4)
 
 It's **faster** than copy-pasting from Stack Overflow and ChatGPT.
 
