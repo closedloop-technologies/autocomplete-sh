@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.4.0
+export ACSH_VERSION=0.4.1
 
 ###############################################################################
 #
@@ -533,7 +533,7 @@ _autocompletesh() {
         acsh_load_config
 
         # CHECK API KEY is set
-        if [[ -z "$ACSH_ACTIVE_API_KEY" ]]; then
+        if [[ -z "$ACSH_ACTIVE_API_KEY" && ${ACSH_PROVIDER^^} != "OLLAMA" ]]; then
             provider_key="${ACSH_PROVIDER:-openai}_API_KEY"
             provider_key=${provider_key^^}
             echo_error "${provider_key} is not set
