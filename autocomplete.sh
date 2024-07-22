@@ -9,7 +9,7 @@
 # Do not use `set -euo pipefail` or similar because this a
 # bash completion script and it will change the behavior of the shell invoking it
 
-export ACSH_VERSION=0.3.3
+export ACSH_VERSION=0.3.4
 
 ###############################################################################
 #
@@ -937,21 +937,19 @@ Please follow the install instructions on https://github.com/closedloop-technolo
         echo "Added autocomplete cli autocomplete to $bashrc_file"
     fi
 
-    # $(model_command)
-
-    echo_green "Autocomplete.sh - LLM Powered Bash Completion - Version $ACSH_VERSION - https://autocomplete.sh"
+    echo
+    echo_green "Autocomplete.sh - LLM Powered Bash Completion - Version $ACSH_VERSION"
     echo -e "\e[1;34mInstall Completed\e[0m"
     echo
-    echo -e "Please run \e[1;34msource $bashrc_file\e[0m to enable autocomplete"
-    echo
-    echo "Then:"
-    echo -e "$ \e[1;34mautocomplete model\e[0m \tto select the language model"
-
+    echo "Two more commands to run steps to complete the installation:"
+    echo -e "1. $ \e[1;34msource $bashrc_file\e[0m to enable autocomplete"
+    echo -e "2. $ \e[1;34mautocomplete model\e[0m \tto select the language model"
     echo
     echo -e "$ \e[1;30mautocomplete config\e[0m \tto view settings"
-    echo -e "$ \e[1;30mautocomplete --help\e[0m \tto enable autocomplete"
-
-
+    echo -e "$ \e[1;30mautocomplete --help\e[0m \tfor additional commands"
+    echo
+    echo -e "Visit \e[1;32mhttps://autocomplete.sh\e[0m for examples and more information"
+    echo
 }
 
 remove_command() {

@@ -4,7 +4,7 @@
 # This install script downloads the latest version of the LLMs
 
 # The URL of the latest version of the LLMs
-ACSH_VERSION="0.3.3"
+ACSH_VERSION="0.3.4"
 URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/v${ACSH_VERSION}/autocomplete.sh"
 
 # The default location to install the LLMs
@@ -29,9 +29,18 @@ if ! command -v jq &> /dev/null; then
     echo "For macOS (using Homebrew): brew install jq"
 fi
 
-# Check if the _init_completion function exists
+# Source bash-completion if _init_completion function does not exist
 if ! type -t _init_completion &> /dev/null; then
-    echo "ERROR: Please ensure you have bash-completion installed and sourced."
-else
-    "$INSTALL_LOCATION" install
+    # shellcheck disable=SC1091
+    if [ -f /usr/share/bash-completion/bash_completion ]; then
+        . /usr/share/bash-completion/bash_completion
+    elif [ -f /etc/bash_completion ]; then
+        . /etc/bash_completion
+    else
+        echo "ERROR: Please ensure you have bash-completion installed and sourced."
+        exit 1
+    fi
 fi
+
+# Proceed with installation
+"$INSTALL_LOCATION" install
