@@ -12,8 +12,6 @@ setup() {
         echo "ERROR: OPENAI_API_KEY is not set. Please set the environment variable before running the tests."
         exit 1
     fi
-
-    . autocomplete config
 }
 
 teardown() {
@@ -55,7 +53,6 @@ teardown() {
 }
 
 @test "autocomplete config sets environment variables" {
-    . autocomplete config
     run env | grep ACSH
     [ "$status" -eq 0 ]
     [ "$output" | wc -l | -gt 1 ]

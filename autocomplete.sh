@@ -959,10 +959,9 @@ Please follow the install instructions on https://github.com/closedloop-technolo
     echo_green "Autocomplete.sh - LLM Powered Bash Completion - Version $ACSH_VERSION"
     echo -e "\e[1;34mInstall Completed\e[0m"
     echo
-    echo "Three quick commands to run to complete the installation:"
+    echo "Two more steps to complete the installation:"
     echo -e "1. $ \e[1;34msource $bashrc_file\e[0m to enable autocomplete"
-    echo -e "2. $ \e[1;34msource autocomplete config\e[0m to load environment variables"
-    echo -e "3. $ \e[1;34mautocomplete model\e[0m \tto select the language model"
+    echo -e "2. $ \e[1;34mautocomplete model\e[0m \tto select the language model"
     echo
     echo -e "$ \e[1;30mautocomplete config\e[0m \tto view settings"
     echo -e "$ \e[1;30mautocomplete --help\e[0m \tfor additional commands"
@@ -1087,6 +1086,8 @@ enable_command() {
 		echo_green "Autocomplete.sh - reloading"
 		disable_command
 	fi
+    # shellcheck source=autocomplete.sh
+    . load_config
 	# Set as the default completion function (-D )
 	# Also enable for empty commands (-E)
 	complete -D -E -F _autocompletesh -o nospace

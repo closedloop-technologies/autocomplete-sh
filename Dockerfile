@@ -18,8 +18,6 @@ COPY tests tests
 # Add bash-completion sourcing to .bashrc
 RUN echo "\nif [ -f /etc/bash_completion ] && ! shopt -oq posix; then\n    . /etc/bash_completion\nfi"  >> /root/.bashrc
 
-# Set the default command to bash
-CMD ["bash"]
-
 # Set the entrypoint to run BATS tests
-ENTRYPOINT ["bats", "tests"]
+ENTRYPOINT ["bats"]
+CMD ["tests"]
