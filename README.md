@@ -4,7 +4,7 @@ Autocomplete.sh
 
 `autocomplete` adds intelligent command-line suggestions  for you directly in the terminal.  Just type <TAB><TAB> and it calls an LLM (OpenAI by default) and returns the top suggestions for you.
 
-https://github.com/user-attachments/assets/3555cbe1-cb45-48b8-8489-06b271ab0e3b
+![intro_example1](https://github.com/user-attachments/assets/6f2a8f81-49b7-46e9-8005-c8a9dd3fc033)
 
 ## Installation
 
