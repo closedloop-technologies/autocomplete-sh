@@ -12,6 +12,21 @@ Autocomplete.sh
 wget -qO- https://autocomplete.sh/install.sh | bash
 ```
 
+## Supported Models
+We current support OpenAI, Groq, Anthropic and Ollama models.
+
+```bash
+autocomplete model
+```
+
+![autocomplete-model](https://github.com/user-attachments/assets/6206963f-81c2-4d68-b054-6ec88969ba0c)
+
+After selecting the model, the full configuration will be displayed (endpoint, costs, api key, ...)
+
+![image](https://github.com/user-attachments/assets/74de61f6-a1fe-4b7c-80e5-14d222848288)
+
+To change any of these, see the Configuration section below
+
 ## How it works
 
 It's **faster** than copy-pasting from Stack Overflow and ChatGPT.
@@ -31,20 +46,18 @@ autocomplete command --dry-run "anything you want here"
 
 By default we cache the last 20 requests to reduce latency and costs.
 
-### Support Open Source
-Although writing 1,049 lines of bash was its own "reward", if you tried it and love it please show your support here!
-
-[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/skruzel)
-
-
 ### Configuration
 
 ```bash
-autocomplete config
+. autocomplete config
+# or
+source autocomplete config
 ```
-< TODO INSERT PICTURE OF DEFAULT CONFIG>
+Note you have to in order to determine if the autocomplete is enabled
 
-Configurations can be changed with
+![image](https://github.com/user-attachments/assets/61578f27-594f-4bc4-ba86-c5f99a41e8a9)
+
+Configurations can be changed manually with
 ```bash
 autocomplete config set <key> <value>
 ```
@@ -56,7 +69,7 @@ For example `autocomplete config set api_key sk-p...` will update your API key.
 ```bash
 autocomplete usage
 ```
-< TODO INSERT PICTURE OF USAGE>
+![image](https://github.com/user-attachments/assets/0fc611b9-fb4c-4f68-bf01-8e6ecdcf7410)
 
 The average cost for me is about half a penny per request using the latest **gpt-4-omni** model.
 
@@ -78,7 +91,8 @@ As always `--help` will get you more
 autocomplete --help
 ```
 
-< TODO INSERT PICTURE OF help screen>
+![image](https://github.com/user-attachments/assets/5db7dd35-0436-4e8e-a474-87de9a60cda9)
+
 
 ## Use Cases
 
@@ -166,14 +180,14 @@ Tests via Bats
     sudo apt install bats
     bats tests
 
-Test Installation
+Test Installation via Docker
 
     docker build -t autocomplete-sh .
 
     # To run tests
     docker run --rm -e OPENAI_API_KEY=$OPENAI_API_KEY autocomplete-sh
 
-    # To use the autocomplete
+    # To use the autocomplete manually - requires manually installing it once inside the container
     docker run --rm -it \
        -e OPENAI_API_KEY=$OPENAI_API_KEY \
        --entrypoint /bin/bash \
@@ -193,6 +207,12 @@ Currently maintained by Sean Kruzel [@closedloop](https://github.com/closedloop)
 
 More maintainers and bug fixers are quite welcome, and we hope to grow the community around this project.
 Governance will be re-evaluated as the project evolves.
+
+### Support Open Source
+Although writing 1,049 lines of bash was its own "reward", if you tried it and love it please show your support here!
+
+[!["Buy Me A Coffee"](https://www.buymeacoffee.com/assets/img/custom_images/orange_img.png)](https://www.buymeacoffee.com/skruzel)
+
 
 ## License
 
