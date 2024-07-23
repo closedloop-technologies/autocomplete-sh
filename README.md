@@ -6,6 +6,26 @@ Autocomplete.sh
 
 ![intro_example1](https://github.com/user-attachments/assets/6f2a8f81-49b7-46e9-8005-c8a9dd3fc033)
 
+### Features
+* **Easy to use**: (just type natural language) and no need to copy and paste between CoPilot or ChatGPT  
+* **Context Aware**: The prompt knows the state of the terminal, recent commands, `--help` information.  Read more in the How it works section below
+* **LLM Agnostic**: We support a wide variety of models that vary from Fast and Cheap to Powerful and Less Cheap. `autocomplete model`
+* **Security Sensitive**: Although using any third party contains risks, we enable the use of local LLMs and we sanitize the prompts for some PPI like API_KEYs.  You can always preview the prompt via the `--dry-run` flag (see below).
+* **Caching**: By default we cache the last 20 queries for convience and speed:  `autocomplete config`
+* **Cost Monitoring**: The size and costs of each API call is logged.  `autocomplete usage`
+
+### Tips and Tricks
+
+1. If you know the command you need, but forget the parameters:  Write this:  `ffmpeg # reformat video to fit youtube` Then type **<TAB><TAB>**
+2. To set more out of a single command: Write this: `# create a github repo, init a readme, and push it to the github` Then type **<TAB><TAB>**
+
+If all is going well, you should see a flashing green cursor as it queries the LLM API.  
+
+**Debugging:**
+If the last word in your command is a filename or common command, bash will try to use standard bash_completion scripts and will not trigger `autocomplete`.  To combat this I suggest writing another word after the command (like "Please") or putting most of the line in quotes.
+
+Currently this only supports **`bash`**.  If you have additional problems, please file an [issue](https://github.com/closedloop-technologies/autocomplete-sh/issues)
+
 ## Installation
 
 ```bash
