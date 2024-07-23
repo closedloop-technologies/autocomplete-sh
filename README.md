@@ -14,18 +14,6 @@ Autocomplete.sh
 * **Caching**: By default we cache the last 20 queries for convience and speed:  `autocomplete config`
 * **Cost Monitoring**: The size and costs of each API call is logged.  `autocomplete usage`
 
-### Tips and Tricks
-
-1. If you know the command you need, but forget the parameters:  Write this:  `ffmpeg # reformat video to fit youtube` Then type **<TAB><TAB>**
-2. To set more out of a single command: Write this: `# create a github repo, init a readme, and push it to the github` Then type **<TAB><TAB>**
-
-If all is going well, you should see a flashing green cursor as it queries the LLM API.  
-
-**Debugging:**
-If the last word in your command is a filename or common command, bash will try to use standard bash_completion scripts and will not trigger `autocomplete`.  To combat this I suggest writing another word after the command (like "Please") or putting most of the line in quotes.
-
-Currently this only supports **`bash`**.  If you have additional problems, please file an [issue](https://github.com/closedloop-technologies/autocomplete-sh/issues)
-
 ## Installation
 
 ```bash
@@ -65,6 +53,18 @@ autocomplete command --dry-run "anything you want here"
 [Pull Requests](https://github.com/closedloop-technologies/autocomplete-sh/pulls) are welcome if you want to make it better!
 
 By default we cache the last 20 requests to reduce latency and costs.
+
+### Tips and Tricks
+
+1. If you know the command you need, but forget the parameters:  Write this:  `ffmpeg # reformat video to fit youtube` Then type **<TAB><TAB>**
+2. To set more out of a single command: Write this: `# create a github repo, init a readme, and push it to the github` Then type **<TAB><TAB>**
+
+If all is going well, you should see a flashing green cursor as it queries the LLM API.  
+
+**Debugging:**
+If the last word in your command is a filename or common command, bash will try to use standard bash_completion scripts and will not trigger `autocomplete`.  To combat this I suggest writing another word after the command (like "Please") or putting most of the line in quotes.
+
+Currently this only supports **`bash`**.  If you have additional problems, please file an [issue](https://github.com/closedloop-technologies/autocomplete-sh/issues)
 
 ### Configuration
 
