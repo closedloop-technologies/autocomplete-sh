@@ -195,11 +195,14 @@
               class="terminal-text hover:terminal-highlight px-4 py-2"
               >Use Cases</a
             >
-            <a
-              href="https://github.com/closedloop-technologies/autocomplete-sh"
-              class="terminal-text hover:terminal-highlight px-4 py-2"
-              >GitHub</a
-            >
+            <iframe
+              src="https://ghbtns.com/github-btn.html?user=twbs&repo=bootstrap&type=star&size=large&text=false"
+              frameborder="0"
+              scrolling="0"
+              width="170"
+              height="30"
+              title="Autocomplete on Github"
+            ></iframe>
           </nav>
         </div>
       </div>
@@ -208,19 +211,19 @@
     <main class="container mx-auto px-4 py-12">
       <section
         id="hero"
-        class="hero-gradient rounded-lg shadow-2xl mb-24 p-8 sm:p-12"
+        class="hero-gradient rounded-lg shadow-2xl mb-24 p-8 md:p-12"
       >
-        <div class="flex flex-col sm:flex-row items-center">
-          <div class="w-full sm:w-1/2 mb-8 sm:mb-0">
+        <div class="flex flex-col md:flex-row items-center">
+          <div class="w-full md:w-1/2 mb-8 md:mb-0">
             <h1 class="text-4xl lg:text-6xl mb-6 terminal-text font-bold">
               Command Your Terminal
             </h1>
-            <p class="text-xl sm:text-2xl mb-8 terminal-highlight">
+            <p class="text-xl md:text-2xl mb-8 terminal-highlight">
               <span class="blink">></span> --help less, accomplish more
             </p>
             <a href="#getting-started" class="cta-button">Get Started</a>
           </div>
-          <div class="w-full sm:w-1/2 flex justify-center">
+          <div class="w-full md:w-1/2 flex justify-center">
             <img
               src="https://github.com/user-attachments/assets/6f2a8f81-49b7-46e9-8005-c8a9dd3fc033"
               alt="Autocomplete.sh Demo"
@@ -240,28 +243,37 @@
               Context-Aware
             </h3>
             <p>
-              Considers terminal state, recent commands, and --help information
+              Considers your machine's environment, recently executed commands,
+              current directory contents, and command-specific help information
+              for faster, more accurate suggestions.
             </p>
           </div>
           <div class="terminal-bg p-6">
             <h3 class="text-xl font-semibold mb-3 terminal-highlight">
               Flexible
             </h3>
-            <p>Supports various LLM models, from fast and cheap to powerful</p>
+            <p>
+              Supports various LLM models, from fast and cheap to powerful,
+              adapting to your needs.
+            </p>
           </div>
           <div class="terminal-bg p-6">
             <h3 class="text-xl font-semibold mb-3 terminal-highlight">
               Secure
             </h3>
             <p>
-              Enables local LLMs and sanitizes prompts for sensitive information
+              Supports local LLMs and sanitizes prompts for sensitive
+              information, keeping your data private.
             </p>
           </div>
           <div class="terminal-bg p-6">
             <h3 class="text-xl font-semibold mb-3 terminal-highlight">
               Efficient
             </h3>
-            <p>Caches recent queries for speed and convenience</p>
+            <p>
+              Caches recent queries for speed and convenience, optimizing your
+              workflow.
+            </p>
           </div>
         </div>
       </section>
@@ -270,21 +282,29 @@
         <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
           How It Works
         </h2>
-        <div class="terminal-bg p-6">
-          <p class="mb-4">
-            Autocomplete.sh provides faster, more accurate suggestions by
-            considering:
-          </p>
-          <ul class="list-disc list-inside">
-            <li>Your machine's environment</li>
-            <li>Recently executed commands</li>
-            <li>Current directory contents</li>
-            <li>Command-specific help information</li>
-          </ul>
-          <p class="mt-4">View the full prompt with:</p>
-          <pre class="bg-black text-green-400 p-2 rounded mt-2">
-autocomplete command --dry-run "your command here"</pre
-          >
+        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <div class="video-container">
+            <iframe
+              width="560"
+              height="315"
+              src="https://www.youtube.com/embed/IAgkjerCvz8?si=CDAIynVlp1zTdXss"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+            ></iframe>
+          </div>
+          <div class="video-container">
+            <iframe
+              width="560"
+              height="315"
+              src="https://www.youtube.com/embed/dS1-qh_dxac?si=mrVp0O6EyZmP4XpY"
+              frameborder="0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              referrerpolicy="strict-origin-when-cross-origin"
+              allowfullscreen
+            ></iframe>
+          </div>
         </div>
       </section>
 
@@ -335,6 +355,45 @@ wget -qO- https://autocomplete.sh/install.sh | bash</pre
         </div>
       </section>
 
+      <section id="supported-models" class="mb-24">
+        <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
+          Supported Language Models
+        </h2>
+        <div class="terminal-bg p-6">
+          <div class="grid grid-cols-4 gap-6 text-center">
+            <div class="p-6">
+              <h3 class="text-lg font-semibold mb-3 terminal-highlight">
+                OpenAI
+              </h3>
+            </div>
+            <div class="p-6">
+              <h3 class="text-lg font-semibold mb-3 terminal-highlight">
+                Groq
+              </h3>
+            </div>
+            <div class="p-6">
+              <h3 class="text-lg font-semibold mb-3 terminal-highlight">
+                Anthropic
+              </h3>
+            </div>
+            <div class="p-6">
+              <h3 class="text-md font-semibold mb-3 terminal-highlight">
+                Ollama
+              </h3>
+            </div>
+          </div>
+          <p class="mb-4">To change the active model:</p>
+          <pre class="bg-black text-green-400 p-2 rounded mb-4">
+autocomplete model</pre
+          >
+          <img
+            src="/images/autocomplete-model.gif"
+            alt="Supported Language Models"
+            class="w-full h-auto rounded-lg shadow-lg"
+          />
+        </div>
+      </section>
+
       <section id="configuration" class="mb-24">
         <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
           Configuration
@@ -348,23 +407,6 @@ source autocomplete config</pre
           <pre class="bg-black text-green-400 p-2 rounded">
 autocomplete config set &lt;key&gt; &lt;value&gt;</pre
           >
-        </div>
-      </section>
-
-      <section id="usage-tracking" class="mb-24">
-        <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
-          Usage Tracking
-        </h2>
-        <div class="terminal-bg p-6">
-          <p class="mb-4">Track your API calls and associated costs:</p>
-          <pre class="bg-black text-green-400 p-2 rounded">
-autocomplete usage</pre
-          >
-          <img
-            src="https://github.com/user-attachments/assets/0fc611b9-fb4c-4f68-bf01-8e6ecdcf7410"
-            alt="Usage Statistics"
-            class="mt-4 rounded-lg shadow-lg"
-          />
         </div>
       </section>
 
@@ -389,14 +431,18 @@ autocomplete usage</pre
                 >Share it!</a
               >
             </li>
-            <li>
-              <a
-                href="https://github.com/closedloop-technologies/autocomplete-sh"
-                class="text-green-400 hover:underline"
-                >Star it!</a
-              >
-            </li>
           </ul>
+          <p class="mb-4">
+            <iframe
+              src="https://ghbtns.com/github-btn.html?user=closedloop-technologies&repo=autocomplete-sh&type=star&count=true&size=large"
+              frameborder="0"
+              scrolling="0"
+              width="170"
+              height="30"
+              title="GitHub"
+            ></iframe>
+          </p>
+
           <p class="mb-4">
             If you want to help keep up the energy to build stuff like this,
             please:
