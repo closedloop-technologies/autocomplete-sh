@@ -349,18 +349,37 @@
           </div>
         </div>
       </section>
-
       <section id="getting-started" class="mb-24">
         <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
           Quick Start
         </h2>
-        <div class="terminal-bg p-6 copyable">
+        <div class="terminal-bg p-6 rounded-md">
           <p class="mb-4">Install Autocomplete.sh with a single command:</p>
-          <pre
-            class="text-white p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
-            id="install-command"
-          >$ <code class="text-green-400">wget -qO- https://autocomplete.sh/install.sh | bash</code>&nbsp;<span class="blink-cursor"></span></pre>
-          <p class="mt-4 mb-2 terminal-highlight">Click to copy</p>
+          <div class="relative copyable">
+            <pre
+              class="text-white p-4 rounded bg-gray-800 overflow-x-auto whitespace-pre text-left"
+              id="install-command"
+            ><span class="text-white">$</span> <code class="text-green-400">wget -qO- https://autocomplete.sh/install.sh | bash<span class="blink-cursor"></span></code></pre>
+
+            <button
+              id="install-command-button"
+              class="absolute top-3 right-2 px-2 py-1 text-sm text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              onclick="copyToClipboard('wget -qO- https://autocomplete.sh/install.sh | bash')"
+            >
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                class="h-5 w-5"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+              >
+                <path d="M8 3a1 1 0 011-1h2a1 1 0 110 2H9a1 1 0 01-1-1z" />
+                <path
+                  d="M6 3a2 2 0 00-2 2v11a2 2 0 002 2h8a2 2 0 002-2V5a2 2 0 00-2-2 3 3 0 01-3 3H9a3 3 0 01-3-3z"
+                />
+              </svg>
+            </button>
+          </div>
+          <p class="mt-4 text-sm text-gray-400">Click above to copy</p>
         </div>
       </section>
       <section id="use-cases" class="mb-24">
@@ -448,8 +467,8 @@
             <p class="mb-4 text-left">Update settings:</p>
             <pre
               class="p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
-            >$ <code class="text-green-400">autocomplete config set &lt;key&gt; &lt;value&gt;</code>
-              <span class="blink-cursor"></span></pre>
+            >$ <code class="text-green-400">autocomplete config set &lt;key&gt; &lt;value&gt;<span class="blink-cursor"></span></code>
+              </pre>
           </div>
         </div>
       </section>
@@ -532,28 +551,32 @@
           body.setAttribute("data-theme", "light");
         }
       }
-
       function copyToClipboard(text) {
-        alert("Copied to clipboard: " + text);
-        navigator.clipboard.writeText(text).then(
-          () => {
-            console.log("Text copied to clipboard");
-          },
-          (err) => {
-            console.error("Could not copy text: ", err);
-          }
-        );
+        navigator.clipboard
+          .writeText(text)
+          .then(() => {
+            const button = document.querySelector(
+              "#install-command-button + button"
+            );
+            const originalContent = button.innerHTML;
+            button.innerHTML =
+              '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>';
+            button.classList.add("terminal-highlight");
+            setTimeout(() => {
+              button.innerHTML = originalContent;
+              button.classList.remove("terminal-highlight");
+            }, 2000);
+          })
+          .catch((err) => {
+            console.error("Failed to copy: ", err);
+          });
       }
 
       document.querySelectorAll(".copyable").forEach((block) => {
         block.addEventListener("click", () => {
-          const text = block.textContent.trim();
-          copyToClipboard(text);
-          const originalText = block.textContent;
-          block.textContent = "Copied!";
-          setTimeout(() => {
-            block.textContent = originalText;
-          }, 2000);
+          copyToClipboard(
+            "wget -qO- https://autocomplete.sh/install.sh | bash"
+          );
         });
       });
 
