@@ -3,7 +3,6 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-
     <title>Autocomplete.sh: Command Your Terminal</title>
 
     <!-- Open Graph tags -->
@@ -82,70 +81,43 @@
         --success-color: #006600;
       }
 
-      * {
-        margin: 0;
-        padding: 0;
-        box-sizing: border-box;
-      }
-
-      [data-theme="light"] {
-        --bg-color: #f0f0f0;
-        --text-color: #1a1a1a;
-        --accent-color: #ffffff;
-        --link-color: #006600;
-        --error-color: #cc0000;
-        --warning-color: #cccc00;
-        --success-color: #006600;
-      }
-
       body {
         font-family: "Source Code Pro", monospace;
         background-color: var(--bg-color);
         color: var(--text-color);
       }
+
       .terminal-bg {
         background-color: var(--accent-color);
         border: 1px solid var(--text-color);
-        border: 1px solid var(--text-color);
         position: relative;
         cursor: pointer;
       }
 
-      ul {
-        list-style-type: none;
-        padding-left: 1rem;
-      }
-
-      ul li::before {
-        content: "❯ ";
+      .terminal-text {
         color: var(--text-color);
       }
 
-      .video-container {
-        position: relative;
-        padding-bottom: 56.25%;
-        height: 0;
-        overflow: hidden;
-        margin: 2rem 0;
-        border: 1px solid var(--text-color);
+      .terminal-highlight {
+        color: #ff00ff;
       }
 
-      .video-container iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
+      .hero-gradient {
+        background: linear-gradient(135deg, #001a00 0%, #003300 100%);
       }
 
-      .cta-button {
-        display: inline-block;
-        background-color: var(--link-color);
-        color: var(--bg-color);
-        padding: 0.8rem 1.5rem;
-        border: 1px solid var(--text-color);
+      .blink {
+        animation: blink-animation 1s steps(5, start) infinite;
+      }
+
+      @keyframes blink-animation {
+        to {
+          visibility: hidden;
+        }
+      }
+
+      .copyable {
         position: relative;
-        cursor: pointer;
       }
 
       .copyable::after {
@@ -158,72 +130,23 @@
         opacity: 0.7;
       }
 
-      ul {
-        list-style-type: none;
-        padding-left: 1rem;
-      }
-
-      ul li::before {
-        content: "❯ ";
-        color: var(--text-color);
-      }
-
-      .video-container {
-        position: relative;
-        padding-bottom: 56.25%;
-        height: 0;
-        overflow: hidden;
-        margin: 2rem 0;
-        border: 1px solid var(--text-color);
-      }
-
-      .video-container iframe {
-        position: absolute;
-        top: 0;
-        left: 0;
-        width: 100%;
-        height: 100%;
-      }
-
       .cta-button {
         display: inline-block;
         background-color: var(--link-color);
         color: var(--bg-color);
         padding: 0.8rem 1.5rem;
         border-radius: 5px;
-        border-radius: 5px;
         font-weight: bold;
         text-align: center;
         margin: 1rem 0;
-        transition: background-color var(--transition-speed),
-          color var(--transition-speed);
-        text-transform: uppercase;
-        letter-spacing: 1px;
-        border-radius: 5px;
-        font-weight: bold;
-        text-align: center;
-        margin: 1rem 0;
-        transition: background-color var(--transition-speed),
-          color var(--transition-speed);
+        transition: background-color 0.3s, color 0.3s;
         text-transform: uppercase;
         letter-spacing: 1px;
       }
-      .terminal-text {
-        color: var(--text-color);
-      }
-      .terminal-highlight {
-        color: #ff00ff;
-      }
-      .hero-gradient {
-        background: linear-gradient(135deg, #001a00 0%, #003300 100%);
-      }
-      .blink {
-        animation: blink-animation 1s steps(5, start) infinite;
-      }
-      @keyframes blink-animation {
-        to {
-          visibility: hidden;
-        }
+
+      .cta-button:hover {
+        background-color: var(--text-color);
+        color: var(--bg-color);
       }
     </style>
 
@@ -295,11 +218,7 @@
             <p class="text-xl sm:text-2xl mb-8 terminal-highlight">
               <span class="blink">></span> --help less, accomplish more
             </p>
-            <a
-              href="#getting-started"
-              class="bg-green-600 hover:bg-green-700 text-black font-bold py-3 px-6 rounded-lg transition duration-300 ease-in-out transform hover:scale-105 inline-block"
-              >Get Started</a
-            >
+            <a href="#getting-started" class="cta-button">Get Started</a>
           </div>
           <div class="w-full sm:w-1/2 flex justify-center">
             <img
@@ -375,7 +294,10 @@ autocomplete command --dry-run "your command here"</pre
         </h2>
         <div class="terminal-bg p-6">
           <p class="mb-4">Install Autocomplete.sh with a single command:</p>
-          <pre class="bg-black text-green-400 p-2 rounded copyable">
+          <pre
+            class="bg-black text-green-400 p-2 rounded copyable"
+            id="install-command"
+          >
 wget -qO- https://autocomplete.sh/install.sh | bash</pre
           >
         </div>
@@ -508,16 +430,10 @@ autocomplete usage</pre
         }
       }
 
-      function copyToClipboard(elementId) {
-        const el = document.getElementById(elementId);
-        const text = el.textContent;
+      function copyToClipboard(text) {
         navigator.clipboard.writeText(text).then(
           () => {
-            el.dataset.originalText = el.textContent;
-            el.textContent = "Copied!";
-            setTimeout(() => {
-              el.textContent = el.dataset.originalText;
-            }, 2000);
+            console.log("Text copied to clipboard");
           },
           (err) => {
             console.error("Could not copy text: ", err);
@@ -526,7 +442,15 @@ autocomplete usage</pre
       }
 
       document.querySelectorAll(".copyable").forEach((block) => {
-        block.addEventListener("click", () => copyToClipboard(block.id));
+        block.addEventListener("click", () => {
+          const text = block.textContent.trim();
+          copyToClipboard(text);
+          const originalText = block.textContent;
+          block.textContent = "Copied!";
+          setTimeout(() => {
+            block.textContent = originalText;
+          }, 2000);
+        });
       });
 
       // Intersection Observer for animations
