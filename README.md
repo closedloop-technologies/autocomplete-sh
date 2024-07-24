@@ -120,9 +120,9 @@ Contributions and bug fixes are welcome!
 
 The best way to support Autocomplete.sh is to just use it!
 
-* [Just use it!](https://github.com/closedloop-technologies/autocomplete-sh?tab=readme-ov-file#quick%20start)
-* [Share it!](https://x.com/intent/post?text=I+love+autocomplete.sh%21++I+just+press+%3CTAB%3E%3CTAB%3E+to+use+build+quickly+%40justbuild_ai)
-* Star it! 
+* [Just use it!](https://github.com/closedloop-technologies/autocomplete-sh?tab=readme-ov-file#quick-start)
+* [Share it!](https://x.com/intent/post?text=I+love+autocomplete.sh%21++I+just+press+%3CTAB%3E%3CTAB%3E+to+just+build+quickly+%40JustBuild_ai)
+* Star it!
 
 If you want to help me keep up the energy to build stuff like this, please:
 
