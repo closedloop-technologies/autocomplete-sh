@@ -64,133 +64,137 @@
       rel="stylesheet"
     />
     <style>
-            /* 3a3a3a */
-            :root {
-              --bg-color: #262326;
-              --text-color: #00ff00;
-              --accent-color: #121212;
-              --link-color: #00cc00;
-            }
-
-            .terminal-highlight {
-              color: #ff00ff;
-            }
-
-            .hero-gradient {
-              background: #121212;
-            }
-
-            [data-theme="light"] {
-              --bg-color: #f0f0f0;
-              --text-color: #1a1a1a;
-              --accent-color: #ffffff;
-              --link-color: #006600;
-              --error-color: #cc0000;
-              --warning-color: #cccc00;
-              --success-color: #006600;
-            }
-
-            body {
-              font-family: "Source Code Pro", monospace;
-              background-color: var(--bg-color);
-              color: var(--text-color);
-            }
-
-            .terminal-bg {
-              background-color: var(--accent-color);
-              border: 1px solid var(--text-color);
-              position: relative;
-              cursor: pointer;
-            }
-
-            .terminal-text {
-              color: var(--text-color);
-            }
-
-            .blink {
-              animation: blink-animation 1s steps(5, start) infinite;
-            }
-
-            @keyframes blink-animation {
-              to {
-                visibility: hidden;
-              }
-            }
-            @keyframes blink-animation-cursor {
-        0% { opacity: 0; }
-        50% { opacity: 1; }
-        100% { opacity: 0; }
+      :root {
+        --bg-color: #262326;
+        --text-color: #00ff00;
+        --accent-color: #121212;
+        --link-color: #00cc00;
       }
 
-            .blink-cursor {
-              display: inline-block;
-              width: 0.5em;
-              height: 1em;
-              background-color: #00ff00;
-              animation: blink-animation-cursor 1s step-end infinite;
-              vertical-align: text-bottom;
-            }
+      .terminal-highlight {
+        color: #ff00ff;
       }
-            .video-container {
-              text-align: center;
-              align-items: center;
-            }
 
-            .copyable {
-              position: relative;
-            }
+      .hero-gradient {
+        background: #121212;
+      }
 
-            .cta-button {
-              display: inline-block;
-              background-color: var(--link-color);
-              color: var(--bg-color);
-              padding: 0.8rem 1.5rem;
-              border-radius: 5px;
-              font-weight: bold;
-              text-align: center;
-              margin: 1rem 0;
-              transition: background-color 0.3s, color 0.3s;
-              text-transform: uppercase;
-              letter-spacing: 1px;
-            }
+      [data-theme="light"] {
+        --bg-color: #f0f0f0;
+        --text-color: #1a1a1a;
+        --accent-color: #ffffff;
+        --link-color: #006600;
+        --error-color: #cc0000;
+        --warning-color: #cccc00;
+        --success-color: #006600;
+      }
 
-            .cta-button:hover {
-              background-color: var(--text-color);
-              color: var(--bg-color);
-            }
+      body {
+        font-family: "Source Code Pro", monospace;
+        background-color: var(--bg-color);
+        color: var(--text-color);
+      }
 
-            /* Add these new styles */
-            .header-container {
-              display: flex;
-              justify-content: space-between;
-              align-items: center;
-            }
+      .terminal-bg {
+        background-color: var(--accent-color);
+        border: 1px solid var(--text-color);
+        position: relative;
+        cursor: pointer;
+      }
 
-            .nav-menu {
-              display: flex;
-              align-items: center;
-              /* background: #262326; */
-            }
+      .terminal-text {
+        color: var(--text-color);
+      }
 
-            .nav-menu a {
-              margin-left: 1rem;
-            }
+      .blink {
+        animation: blink-animation 1s steps(5, start) infinite;
+      }
 
-            .github-icon {
-              width: 24px;
-              height: 24px;
-              fill: var(--text-color);
-            }
+      @keyframes blink-animation {
+        to {
+          visibility: hidden;
+        }
+      }
+      @keyframes blink-animation-cursor {
+        0% {
+          opacity: 0;
+        }
+        50% {
+          opacity: 1;
+        }
+        100% {
+          opacity: 0;
+        }
+      }
 
-            @media (max-width: 640px) {
-              .nav-menu a:not(.github-link) {
-                display: none;
-              }
+      .blink-cursor {
+        display: inline-block;
+        width: 0.5em;
+        height: 1em;
+        background-color: #00ff00;
+        animation: blink-animation-cursor 1s step-end infinite;
+        vertical-align: text-bottom;
+      }
+      .video-container {
+        text-align: center;
+        align-items: center;
+      }
 
-              .nav-menu {
-                margin-left: auto;
-              }
-            }
+      .copyable {
+        position: relative;
+      }
+
+      .cta-button {
+        display: inline-block;
+        background-color: var(--link-color);
+        color: var(--bg-color);
+        padding: 0.8rem 1.5rem;
+        border-radius: 5px;
+        font-weight: bold;
+        text-align: center;
+        margin: 1rem 0;
+        transition: background-color 0.3s, color 0.3s;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+      }
+
+      .cta-button:hover {
+        background-color: var(--text-color);
+        color: var(--bg-color);
+      }
+
+      /* Add these new styles */
+      .header-container {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+      }
+
+      .nav-menu {
+        display: flex;
+        align-items: center;
+        /* background: #262326; */
+      }
+
+      .nav-menu a {
+        margin-left: 1rem;
+      }
+
+      .github-icon {
+        width: 24px;
+        height: 24px;
+        fill: var(--text-color);
+      }
+
+      @media (max-width: 640px) {
+        .nav-menu a:not(.github-link) {
+          display: none;
+        }
+
+        .nav-menu {
+          margin-left: auto;
+        }
+      }
     </style>
 
     <!-- Google Analytics -->
@@ -264,7 +268,7 @@
               Command Your Terminal
             </h1>
             <p class="text-xl md:text-2xl mb-8 terminal-highlight">
-              <span class="blink">></span> --help less, accomplish more
+              <span class="blink">&gt;</span> --help less, accomplish more
             </p>
             <a href="#getting-started" class="cta-button">Get Started</a>
           </div>
@@ -324,9 +328,9 @@
         <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
           <div class="video-container relative w-full pt-[56.25%]">
             <iframe
+              title="Autocomplete.sh Trailer"
               class="w-full h-full rounded-lg shadow-lg border-2 border-gray-700"
               src="https://www.youtube.com/embed/IAgkjerCvz8?si=CDAIynVlp1zTdXss"
-              frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               referrerpolicy="strict-origin-when-cross-origin"
               allowfullscreen
@@ -334,9 +338,9 @@
           </div>
           <div class="video-container relative w-full pt-[56.25%]">
             <iframe
+              title="Autocomplete.sh Walkthrough"
               class="w-full h-full rounded-lg shadow-lg border-2 border-gray-700"
               src="https://www.youtube.com/embed/dS1-qh_dxac?si=mrVp0O6EyZmP4XpY"
-              frameborder="0"
               allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
               referrerpolicy="strict-origin-when-cross-origin"
               allowfullscreen
@@ -436,61 +440,66 @@
               class="p-2 rounded mb-12 overflow-x-auto whitespace-pre-wrap break-words text-left bg-black"
             >$ <code class="text-green-400">source autocomplete config</code><span class="blink-cursor"></span></pre>
             <img
-            src="/images/autocomplete-config.png"
-            alt="Autocomplete Configuration Screen"
+              src="/images/autocomplete-config.png"
+              alt="Autocomplete Configuration Screen"
               class="w-full h-auto rounded-lg shadow-lg border-2 border-gray-700"
             />
-            <p class="mb-4 text-left">Update settings:</p>            
+            <p class="mb-4 text-left">Update settings:</p>
             <pre
               class="p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
-              >$ <code class="text-green-400">autocomplete config set &lt;key&gt; &lt;value&gt;</code><span class="blink-cursor"></span></pre>
-            </pre>
+            >$ <code class="text-green-400">autocomplete config set &lt;key&gt; &lt;value&gt;</code>
+              <span class="blink-cursor"></span></pre>
           </div>
         </div>
       </section>
-
-      <section id="support" class="mb-4">
-        <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
+      <section id="support" class="mb-8">
+        <h2 class="text-4xl mb-6 text-green-500 font-bold">
           Support Open Source
         </h2>
-        <div class="terminal-bg p-6">
-          <p class="mb-4">
+        <div class="bg-gray-900 p-6 rounded-lg border border-green-500">
+          <p class="mb-6 text-lg text-white">
             The best way to support Autocomplete.sh is to
-            <em>
-              <a
-                href="#getting-started"
-                class="text-green-400 hover:underline bold"
-                >just use it!</a
-              ></em
+            <a class="text-green-400 font-bold" href="#getting-started"
+              >just use it!</a
             >
           </p>
-          <p
-            class="text-black bg-white p-4 rounded rounded-sm text-center"
-            style="max-width: 120px; width: 100%"
-          >
+
+          <div class="flex flex-wrap items-center gap-4 mb-6">
             <a
               href="https://twitter.com/share?ref_src=twsrc%5Etfw"
-              class="twitter-share-button m-auto"
               data-size="large"
               data-text="I love this -> "
               data-via="JustBuild_AI"
               data-related="seankruzel"
               data-show-count="false"
-              >Share on X</a
+              class="bg-white h-10 text-black px-4 py-2 rounded-sm hover:bg-gray-800 transition-colors flex items-center gap-2 border border-8 border-gray-700"
             >
-          </p>
-          <p class="my-4">
-            <iframe
-              src="https://ghbtns.com/github-btn.html?user=closedloop-technologies&repo=autocomplete-sh&type=star&count=true&size=large"
-              frameborder="0"
-              scrolling="0"
-              width="170"
-              height="30"
-              title="GitHub"
-            ></iframe>
-          </p>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="16"
+                height="16"
+                fill="currentColor"
+                class="bi bi-twitter-x"
+                viewBox="0 0 16 16"
+              >
+                <path
+                  d="M12.6.75h2.454l-5.36 6.142L16 15.25h-4.937l-3.867-5.07-4.425 5.07H.316l5.733-6.57L0 .75h5.063l3.495 4.633L12.601.75Zm-.86 13.028h1.36L4.323 2.145H2.865l8.875 11.633Z"
+                />
+              </svg>
+              Post
+            </a>
+            <span class="gap-2">
+              <iframe
+                title="GitHub Stars"
+                src="https://ghbtns.com/github-btn.html?user=closedloop-technologies&repo=autocomplete-sh&type=star&count=true&size=large"
+                class="h-10"
+                width="170"
+                height="30"
+              ></iframe>
+            </span>
+          </div>
 
-          <p class="mb-4">
+          <p class="mb-4 text-lg text-white">
             If you want to help keep up the energy to build stuff like this,
             please:
           </p>
