@@ -127,6 +127,33 @@
         }
       }
 
+      @keyframes glitch {
+        0% {
+          transform: translate(0);
+        }
+        20% {
+          transform: translate(-2px, 2px);
+        }
+        40% {
+          transform: translate(-2px, -2px);
+        }
+        60% {
+          transform: translate(2px, 2px);
+        }
+        80% {
+          transform: translate(2px, -2px);
+        }
+        100% {
+          transform: translate(0);
+        }
+      }
+
+      .glitch-text {
+        animation: glitch 0.3s infinite;
+        color: #00ff00;
+        text-shadow: 2px 0 #ff00ff, -2px 0 #00ffff;
+      }
+
       .blink-cursor {
         display: inline-block;
         width: 0.5em;
@@ -552,26 +579,53 @@
         }
       }
       function copyToClipboard(text) {
-        navigator.clipboard
-          .writeText(text)
-          .then(() => {
-            const button = document.querySelector("#install-command-button");
-            if (!button) {
+        if (navigator.clipboard) {
+          navigator.clipboard
+            .writeText(text)
+            .then(() => {
+              const glitchElement = document.querySelector(
+                "#install-command code"
+              );
+              if (glitchElement) {
+                const originalCodeContent = glitchElement.innerHTML;
+                glitchElement.innerHTML =
+                  '<code class="terminal-highlight">Code Copied to Clipboard!</code>';
+
+                setTimeout(() => {
+                  glitchElement.innerHTML = "<code>Hack the planet!</code>";
+                  glitchElement.classList.add("glitch-text");
+
+                  // Position the element
+                  glitchElement.style.position = "absolute";
+                  glitchElement.style.top = "50%";
+                  glitchElement.style.left = "50%";
+                  glitchElement.style.transform = "translate(-50%, -50%)";
+                  setTimeout(() => {
+                    glitchElement.classList.remove("glitch-text");
+                    glitchElement.style = "";
+                    glitchElement.innerHTML = originalCodeContent;
+                  }, 1500);
+                }, 1000);
+              }
+
+              const button = document.querySelector("#install-command-button");
+              if (!button) {
                 console.error("install-command-button not found");
                 alert("Code copied to clipboard.");
-            };
-            const originalContent = button.innerHTML;
-            button.innerHTML =
-              '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>';
-            button.classList.add("terminal-highlight");
-            setTimeout(() => {
-              button.innerHTML = originalContent;
-              button.classList.remove("terminal-highlight");
-            }, 2000);
-          })
-          .catch((err) => {
-            console.error("Failed to copy: ", err);
-          });
+              }
+              const originalContent = button.innerHTML;
+              button.innerHTML =
+                '<svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor"><path d="M9 2a1 1 0 000 2h2a1 1 0 100-2H9z" /><path fill-rule="evenodd" d="M4 5a2 2 0 012-2 3 3 0 003 3h2a3 3 0 003-3 2 2 0 012 2v11a2 2 0 01-2 2H6a2 2 0 01-2-2V5zm9.707 5.707a1 1 0 00-1.414-1.414L9 12.586l-1.293-1.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" /></svg>';
+              button.classList.add("terminal-highlight");
+              setTimeout(() => {
+                button.innerHTML = originalContent;
+                button.classList.remove("terminal-highlight");
+              }, 2000);
+            })
+            .catch((err) => {
+              console.error("Failed to copy: ", err);
+            });
+        }
       }
 
       document.querySelectorAll(".copyable").forEach((block) => {
