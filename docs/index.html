@@ -384,13 +384,13 @@
           <p class="mb-4">Install Autocomplete.sh with a single command:</p>
           <div class="relative copyable">
             <pre
-              class="text-white p-4 rounded overflow-x-auto whitespace-pre text-left"
+              class="text-white py-4 rounded overflow-x-auto whitespace-pre text-left"
               id="install-command"
             ><span class="text-white">$</span> <code class="text-green-400">wget -qO- https://autocomplete.sh/install.sh | bash<span class="blink-cursor"></span></code></pre>
 
             <button
               id="install-command-button"
-              class="absolute top-3 right-2 px-2 py-1 text-sm text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
+              class="hidden sm:flex absolute top-3 right-2 px-2 py-1 text-sm text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
               onclick="copyToClipboard('wget -qO- https://autocomplete.sh/install.sh | bash')"
             >
               <svg
@@ -406,7 +406,7 @@
               </svg>
             </button>
           </div>
-          <p class="mt-4 text-sm text-gray-400">Click above to copy</p>
+          <p class="mt-4 text-sm text-gray-400">Click code above to copy</p>
         </div>
       </section>
       <section id="use-cases" class="mb-24">
@@ -589,7 +589,7 @@
               if (glitchElement) {
                 const originalCodeContent = glitchElement.innerHTML;
                 glitchElement.innerHTML =
-                  '<code class="terminal-highlight">Code Copied to Clipboard!</code>';
+                  '<code class="terminal-highlight">Code copied to clipboard!</code>';
 
                 setTimeout(() => {
                   glitchElement.innerHTML = "<code>Hack the planet!</code>";
@@ -606,12 +606,14 @@
                     glitchElement.innerHTML = originalCodeContent;
                   }, 1500);
                 }, 1000);
+              } else {
+                alert("Code copied to clipboard!");
               }
 
               const button = document.querySelector("#install-command-button");
               if (!button) {
                 console.error("install-command-button not found");
-                alert("Code copied to clipboard.");
+                return
               }
               const originalContent = button.innerHTML;
               button.innerHTML =
