@@ -4,9 +4,8 @@
 # This install script downloads the latest version of the LLMs
 
 # The URL of the latest version of the LLMs
-ACSH_VERSION="v0.4.1"
+ACSH_VERSION="v0.4.2"
 BRANCH_OR_VERSION=${1:-$ACSH_VERSION}
-URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/${BRANCH_OR_VERSION}/autocomplete.sh"
 
 # The default location to install the LLMs
 INSTALL_LOCATION="$HOME/.local/bin/autocomplete"
@@ -16,8 +15,21 @@ if [ ! -d "$(dirname "$INSTALL_LOCATION")" ]; then
     INSTALL_LOCATION="/usr/local/bin/autocomplete"
 fi
 
-# Download the LLMs using WGET
-wget -nv -O "$INSTALL_LOCATION" "$URL"
+# Install from local file or download from GitHub
+if [ "$BRANCH_OR_VERSION" == "dev" ]; then
+    # Use local autocomplete.sh file
+    if [ -f "./autocomplete.sh" ]; then
+        cp "./autocomplete.sh" "$INSTALL_LOCATION"
+        echo "Installed local development version to $INSTALL_LOCATION"
+    else
+        echo "ERROR: Local autocomplete.sh file not found."
+        exit 1
+    fi
+else
+    # Download from GitHub
+    URL="https://raw.githubusercontent.com/closedloop-technologies/autocomplete-sh/${BRANCH_OR_VERSION}/autocomplete.sh"
+    wget -nv -O "$INSTALL_LOCATION" "$URL"
+fi
 
 # Install the LLMs
 chmod +x "$INSTALL_LOCATION"
