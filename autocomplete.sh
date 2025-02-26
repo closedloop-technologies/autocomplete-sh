@@ -30,7 +30,7 @@ echo_green() {
 #                      Global Variables & Model Definitions                   #
 ###############################################################################
 
-export ACSH_VERSION=0.4.1
+export ACSH_VERSION=0.4.2
 
 # Supported models defined in an associative array.
 unset _autocomplete_modellist
