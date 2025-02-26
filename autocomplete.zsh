@@ -1,26 +1,40 @@
-#!/bin/bash
-# Autocomplete.sh - LLM Powered Bash Completion
+#!/bin/zsh
+# Autocomplete.zsh - LLM Powered Zsh Completion
 # MIT License - ClosedLoop Technologies, Inc.
 # Sean Kruzel 2024-2025
 #
-# This script provides bash completion suggestions using an LLM.
-# It includes enhanced error handling, refined sanitization, improved configuration parsing,
-# streamlined provider-specific payload building, stronger caching eviction, and an updated interactive UX.
+# This script provides zsh completion suggestions using an LLM.
+# It has been migrated from the Bash version to work with zsh.
 #
-# Note: Do not enable “set -euo pipefail” here because it may interfere with bash completion.
+# Note: Do not enable “set -euo pipefail” here because it may interfere with shell completion.
+
+###############################################################################
+#                    Initialize Zsh Completion Compatibility                #
+###############################################################################
+# Make sure that the native completion system is loaded and enable the bash
+# compatibility layer so that our original Bash-style completions work.
+if [[ -n $ZSH_VERSION ]]; then
+    autoload -Uz compinit && compinit -u
+    autoload -Uz bashcompinit && bashcompinit
+fi
+
+# Define a no-op _init_completion if not already defined.
+if ! whence _init_completion &>/dev/null; then
+    _init_completion() { return 0; }
+fi
 
 ###############################################################################
 #                         Enhanced Error Handling                             #
 ###############################################################################
 
 error_exit() {
-    echo -e "\e[31mAutocomplete.sh - $1\e[0m" >&2
-    # In a completion context, exit is too severe. Use return instead.
+    echo -e "\e[31mAutocomplete.zsh - $1\e[0m" >&2
+    # In a completion context, exit is too severe. Return instead.
     return 1
 }
 
 echo_error() {
-    echo -e "\e[31mAutocomplete.sh - $1\e[0m" >&2
+    echo -e "\e[31mAutocomplete.zsh - $1\e[0m" >&2
 }
 
 echo_green() {
@@ -28,13 +42,12 @@ echo_green() {
 }
 
 ###############################################################################
-#                      Global Variables & Model Definitions                   #
+#                     Global Variables & Model Definitions                    #
 ###############################################################################
 
 export ACSH_VERSION=0.5.0
 
-unset _autocomplete_modellist
-declare -A _autocomplete_modellist
+typeset -A _autocomplete_modellist
 # OpenAI models
 _autocomplete_modellist['openai:	gpt-4o']='{ "completion_cost":0.0000100, "prompt_cost":0.00000250, "endpoint": "https://api.openai.com/v1/chat/completions", "model": "gpt-4o", "provider": "openai" }'
 _autocomplete_modellist['openai:	gpt-4o-mini']='{ "completion_cost":0.0000060, "prompt_cost":0.00000015, "endpoint": "https://api.openai.com/v1/chat/completions", "model": "gpt-4o-mini", "provider": "openai" }'
@@ -74,8 +87,8 @@ _get_terminal_info() {
  * Previous directory: \$OLDPWD=$OLDPWD
  * Home directory: \$HOME=$HOME
  * Operating system: \$OSTYPE=$OSTYPE
- * Shell: \$BASH=$BASH
- * Terminal type: \$TERM=$TERM
+ * Shell: \$SHELL
+ * Terminal type: \$TERM
  * Hostname: \$HOSTNAME"
     echo "$terminal_info"
 }
@@ -92,7 +105,7 @@ _system_info() {
     uname -a
     echo "SIGNATURE: $(machine_signature)"
     echo
-    echo "BASH_VERSION: $BASH_VERSION"
+    echo "ZSH_VERSION: $ZSH_VERSION"
     echo "BASH_COMPLETION_VERSINFO: ${BASH_COMPLETION_VERSINFO}"
     echo
     echo "## Terminal Information"
@@ -107,7 +120,7 @@ _completion_vars() {
     echo "COMP_POINT: ${COMP_POINT}"
     echo "COMP_TYPE: ${COMP_TYPE}"
     echo "COMP_WORDBREAKS: ${COMP_WORDBREAKS}"
-    echo "COMP_WORDS: ${COMP_WORDS[*]}"
+    echo "COMP_WORDS: ${COMP_WORDS[@]}"
 }
 
 ###############################################################################
@@ -127,7 +140,7 @@ _get_command_history() {
     history | tail -n "$HISTORY_LIMIT"
 }
 
-# Refined sanitization: only replace long hex sequences, UUIDs, and API-key–like tokens.
+# Refined sanitization: replace long hex sequences, UUIDs, and API-key–like tokens.
 _get_clean_command_history() {
     local recent_history
     recent_history=$(_get_command_history)
@@ -352,13 +365,13 @@ openai_completion() {
     attempt=1
     while [ $attempt -le $max_attempts ]; do
         if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
-            response=$(\curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
+            response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
                 -H "content-type: application/json" \
                 -H "anthropic-version: 2023-06-01" \
                 -H "x-api-key: $api_key" \
                 --data "$payload")
         elif [[ "${ACSH_PROVIDER^^}" == "OLLAMA" ]]; then
-            response=$(\curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" --data "$payload")
+            response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" --data "$payload")
         else
             response=$(\curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
                 -H "Content-Type: application/json" \
@@ -417,10 +430,10 @@ _get_default_completion_function() {
 
 _default_completion() {
     local current_word="" first_word="" default_func
-    if [[ -n "${COMP_WORDS[*]}" ]]; then
-        first_word="${COMP_WORDS[0]}"
-        if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
-            current_word="${COMP_WORDS[COMP_CWORD]}"
+    if (( ${#COMP_WORDS[@]} )); then
+        first_word="${COMP_WORDS[1]}"
+        if (( $COMP_CWORD < ${#COMP_WORDS[@]} )); then
+            current_word="${COMP_WORDS[$((COMP_CWORD+1))]}"
         fi
     fi
 
@@ -435,7 +448,7 @@ _default_completion() {
             file_completions=$(compgen -f -- "$current_word" || true)
         fi
         if [[ -n "$file_completions" ]]; then
-            readarray -t COMPREPLY <<<"$file_completions"
+            COMPREPLY=("${(f)file_completions}")
         fi
     fi
 }
@@ -458,10 +471,10 @@ _autocompletesh() {
             echo
             return
         fi
-        if [[ -n "${COMP_WORDS[*]}" ]]; then
-            command="${COMP_WORDS[0]}"
-            if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
-                current="${COMP_WORDS[COMP_CWORD]}"
+        if (( ${#COMP_WORDS[@]} )); then
+            command="${COMP_WORDS[1]}"
+            if (( COMP_CWORD < ${#COMP_WORDS[@]} )); then
+                current="${COMP_WORDS[$((COMP_CWORD+1))]}"
             fi
         fi
         user_input="${COMP_LINE:-"$command $current"}"
@@ -498,10 +511,10 @@ _autocompletesh() {
             num_rows=$(echo "$completions" | wc -l)
             COMPREPLY=()
             if [[ $num_rows -eq 1 ]]; then
-                readarray -t COMPREPLY <<<"$(echo -n "${completions}" | sed "s/${command}[[:space:]]*//" | sed 's/:/\\:/g')"
+                COMPREPLY=("${(f)$(echo -n "$completions" | sed "s/${command}[[:space:]]*//" | sed 's/:/\\:/g')}")
             else
                 completions=$(echo "$completions" | awk '{print NR". "$0}')
-                readarray -t COMPREPLY <<< "$completions"
+                COMPREPLY=("${(f)completions}")
             fi
         fi
         if [[ ${#COMPREPLY[@]} -eq 0 ]]; then
@@ -511,15 +524,15 @@ _autocompletesh() {
 }
 
 ###############################################################################
-#                     CLI Commands & Configuration Management                 #
+#                    CLI Commands & Configuration Management                  #
 ###############################################################################
 
 show_help() {
-    echo_green "Autocomplete.sh - LLM Powered Bash Completion"
+    echo_green "Autocomplete.zsh - LLM Powered Zsh Completion"
     echo "Usage: autocomplete [options] command"
     echo "       autocomplete [options] install|remove|config|model|enable|disable|clear|usage|system|command|--help"
     echo
-    echo "Autocomplete.sh enhances bash completion with LLM capabilities."
+    echo "Autocomplete.zsh enhances zsh completion with LLM capabilities."
     echo "Press Tab twice for suggestions."
     echo "Commands:"
     echo "  command             Run autocomplete (simulate double Tab)"
@@ -530,8 +543,8 @@ show_help() {
     echo "  config              Show or set configuration values"
     echo "    config set <key> <value>  Set a config value"
     echo "    config reset             Reset config to defaults"
-    echo "  install             Install autocomplete to .bashrc"
-    echo "  remove              Remove installation from .bashrc"
+    echo "  install             Install autocomplete to .zshrc"
+    echo "  remove              Remove installation from .zshrc"
     echo "  enable              Enable autocomplete"
     echo "  disable             Disable autocomplete"
     echo "  clear               Clear cache and log files"
@@ -550,7 +563,7 @@ is_subshell() {
 
 show_config() {
     local config_file="$HOME/.autocomplete/config" term_width small_table
-    echo_green "Autocomplete.sh - Configuration and Settings - Version $ACSH_VERSION"
+    echo_green "Autocomplete.zsh - Configuration and Settings - Version $ACSH_VERSION"
     if is_subshell; then
         echo "  STATUS: Unknown. Run 'source autocomplete config' to check status."
         return
@@ -571,11 +584,11 @@ show_config() {
     if [[ $term_width -lt 40 ]]; then
         term_width=70; small_table=1
     fi
-    for config_var in $(compgen -v | grep ACSH_); do
+    for config_var in ${(k)parameters:#ACSH_*}; do
         if [[ $config_var == "ACSH_INPUT" || $config_var == "ACSH_PROMPT" || $config_var == "ACSH_RESPONSE" ]]; then
             continue
         fi
-        config_value="${!config_var}"
+        config_value="${(P)config_var}"
         if [[ ${config_var: -8} == "_API_KEY" ]]; then
             continue
         fi
@@ -588,7 +601,7 @@ show_config() {
         fi
     done
     echo -e "  ===================================================================="
-    for config_var in $(compgen -v | grep ACSH_); do
+    for config_var in ${(k)parameters:#ACSH_*}; do
         if [[ $config_var == "ACSH_INPUT" || $config_var == "ACSH_PROMPT" || $config_var == "ACSH_RESPONSE" ]]; then
             continue
         fi
@@ -596,12 +609,12 @@ show_config() {
             continue
         fi
         echo -en "  $config_var:\e[90m"
-        if [[ -z ${!config_var} ]]; then
+        if [[ -z ${(P)config_var} ]]; then
             config_value="UNSET"
             echo -en "\e[31m"
         else
-            rest=${!config_var:4}
-            config_value="${!config_var:0:4}...${rest: -4}"
+            rest=${(P)config_var}
+            config_value="${rest:0:4}...${rest[-4,-1]}"
             echo -en "\e[32m"
         fi
         if [[ $small_table -eq 1 ]]; then
@@ -636,7 +649,7 @@ config_command() {
         show_config
         return
     fi
-    if [ "$2" == "set" ]; then
+    if [ "$2" = "set" ]; then
         local key="$3" value="$4"
         echo "Setting configuration key '$key' to '$value'"
         set_config "$key" "$value"
@@ -659,16 +672,16 @@ build_config() {
         default_config="# ~/.autocomplete/config
 
 # OpenAI API Key
-openai_api_key: $OPENAI_API_KEY
+openai_api_key: \$OPENAI_API_KEY
 
 # Anthropic API Key
-anthropic_api_key: $ANTHROPIC_API_KEY
+anthropic_api_key: \$ANTHROPIC_API_KEY
 
 # Groq API Key
-groq_api_key: $GROQ_API_KEY
+groq_api_key: \$GROQ_API_KEY
 
 # Custom API Key for Ollama
-custom_api_key: $LLM_API_KEY
+custom_api_key: \$LLM_API_KEY
 
 # Model configuration
 provider: openai
@@ -683,11 +696,11 @@ max_history_commands: 20
 max_recent_files: 20
 
 # Cache settings
-cache_dir: $HOME/.autocomplete/cache
+cache_dir: \$HOME/.autocomplete/cache
 cache_size: 10
 
 # Logging settings
-log_file: $HOME/.autocomplete/autocomplete.log"
+log_file: \$HOME/.autocomplete/autocomplete.log"
         echo "$default_config" > "$config_file"
     fi
 }
@@ -718,7 +731,7 @@ acsh_load_config() {
         if [[ -z "$ACSH_OLLAMA_API_KEY" && -n "$LLM_API_KEY" ]]; then
             export ACSH_OLLAMA_API_KEY="$LLM_API_KEY"
         fi
-        # If the custom API key was set, map it to OLLAMA if needed.
+        # Map custom API key to OLLAMA if needed.
         if [[ -z "$ACSH_OLLAMA_API_KEY" && -n "$ACSH_CUSTOM_API_KEY" ]]; then
             export ACSH_OLLAMA_API_KEY="$ACSH_CUSTOM_API_KEY"
         fi
@@ -735,9 +748,9 @@ acsh_load_config() {
 }
 
 install_command() {
-    local bashrc_file="$HOME/.bashrc" autocomplete_setup="source autocomplete enable" autocomplete_cli_setup="complete -F _autocompletesh_cli autocomplete"
+    local bashrc_file="$HOME/.zshrc" autocomplete_setup="source autocomplete enable" autocomplete_cli_setup="compdef _autocompletesh_cli autocomplete"
     if ! command -v autocomplete &>/dev/null; then
-        echo_error "autocomplete.sh not in PATH. Follow install instructions at https://github.com/closedloop-technologies/autocomplete-sh"
+        echo_error "autocomplete.zsh not in PATH. Follow install instructions at https://github.com/closedloop-technologies/autocomplete-sh"
         return
     fi
     if [[ ! -d "$HOME/.autocomplete" ]]; then
@@ -751,26 +764,26 @@ install_command() {
     build_config
     acsh_load_config
     if ! grep -qF "$autocomplete_setup" "$bashrc_file"; then
-        echo -e "# Autocomplete.sh" >> "$bashrc_file"
+        echo -e "# Autocomplete.zsh" >> "$bashrc_file"
         echo -e "$autocomplete_setup\n" >> "$bashrc_file"
-        echo "Added autocomplete.sh setup to $bashrc_file"
+        echo "Added autocomplete.zsh setup to $bashrc_file"
     else
-        echo "Autocomplete.sh setup already exists in $bashrc_file"
+        echo "Autocomplete.zsh setup already exists in $bashrc_file"
     fi
     if ! grep -qF "$autocomplete_cli_setup" "$bashrc_file"; then
-        echo -e "# Autocomplete.sh CLI" >> "$bashrc_file"
+        echo -e "# Autocomplete.zsh CLI" >> "$bashrc_file"
         echo -e "$autocomplete_cli_setup\n" >> "$bashrc_file"
         echo "Added autocomplete CLI completion to $bashrc_file"
     fi
     echo
-    echo_green "Autocomplete.sh - Version $ACSH_VERSION installation complete."
+    echo_green "Autocomplete.zsh - Version $ACSH_VERSION installation complete."
     echo -e "Run: source $bashrc_file to enable autocomplete."
     echo -e "Then run: autocomplete model to select a language model."
 }
 
 remove_command() {
-    local config_file="$HOME/.autocomplete/config" cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"} log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"} bashrc_file="$HOME/.bashrc"
-    echo_green "Removing Autocomplete.sh installation..."
+    local config_file="$HOME/.autocomplete/config" cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"} log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"} bashrc_file="$HOME/.zshrc"
+    echo_green "Removing Autocomplete.zsh installation..."
     [ -f "$config_file" ] && { rm "$config_file"; echo "Removed: $config_file"; }
     [ -d "$cache_dir" ] && { rm -rf "$cache_dir"; echo "Removed: $cache_dir"; }
     [ -f "$log_file" ] && { rm "$log_file"; echo "Removed: $log_file"; }
@@ -784,24 +797,21 @@ remove_command() {
     fi
     if [ -f "$bashrc_file" ]; then
         if grep -qF "source autocomplete enable" "$bashrc_file"; then
-            sed -i '/# Autocomplete.sh/d' "$bashrc_file"
+            sed -i '/# Autocomplete.zsh/d' "$bashrc_file"
             sed -i '/autocomplete/d' "$bashrc_file"
-            echo "Removed autocomplete.sh setup from $bashrc_file"
+            echo "Removed autocomplete.zsh setup from $bashrc_file"
         fi
     fi
     local autocomplete_script
     autocomplete_script=$(command -v autocomplete)
     if [ -n "$autocomplete_script" ]; then
         echo "Autocomplete script is at: $autocomplete_script"
-        if [ "$1" == "-y" ]; then
+        # In zsh, -p is not supported; use print -n then read.
+        print -n "Remove the autocomplete script? (y/n): "
+        read confirm
+        if [[ $confirm == "y" ]]; then
             rm "$autocomplete_script"
             echo "Removed: $autocomplete_script"
-        else
-            read -r -p "Remove the autocomplete script? (y/n): " confirm
-            if [[ $confirm == "y" ]]; then
-                rm "$autocomplete_script"
-                echo "Removed: $autocomplete_script"
-            fi
         fi
     fi
     echo "Uninstallation complete."
@@ -814,38 +824,27 @@ check_if_enabled() {
 }
 
 _autocompletesh_cli() {
-    if [[ -n "${COMP_WORDS[*]}" ]]; then
-        command="${COMP_WORDS[0]}"
-        if [[ -n "$COMP_CWORD" && "$COMP_CWORD" -lt "${#COMP_WORDS[@]}" ]]; then
-            current="${COMP_WORDS[COMP_CWORD]}"
+    if (( ${#COMP_WORDS[@]} )); then
+        command="${COMP_WORDS[1]}"
+        if (( COMP_CWORD < ${#COMP_WORDS[@]} )); then
+            current="${COMP_WORDS[$((COMP_CWORD+1))]}"
         fi
     fi
     if [[ $current == "config" ]]; then
-        readarray -t COMPREPLY <<< "set
-reset"
+        COMPREPLY=($'set\nreset')
         return
     elif [[ $current == "command" ]]; then
-        readarray -t COMPREPLY <<< "command --dry-run"
+        COMPREPLY=($'command --dry-run')
         return
     fi
     if [[ -z "$current" ]]; then
-        readarray -t COMPREPLY <<< "install
-remove
-config
-enable
-disable
-clear
-usage
-system
-command
-model
---help"
+        COMPREPLY=($'install\nremove\nconfig\nenable\ndisable\nclear\nusage\nsystem\ncommand\nmodel\n--help')
     fi
 }
 
 enable_command() {
     if check_if_enabled; then
-        echo_green "Reloading Autocomplete.sh..."
+        echo_green "Reloading Autocomplete.zsh..."
         disable_command
     fi
     acsh_load_config
@@ -860,8 +859,9 @@ disable_command() {
 
 command_command() {
     local args=("$@")
-    for ((i = 0; i < ${#args[@]}; i++)); do
-        if [ "${args[i]}" == "--dry-run" ]; then
+    local i
+    for (( i = 0; i < ${#args[@]}; i++ )); do
+        if [[ "${args[i]}" == "--dry-run" ]]; then
             args[i]=""
             _build_prompt "${args[@]}"
             return
@@ -876,7 +876,8 @@ clear_command() {
     echo "This will clear the cache and log file."
     echo -e "Cache directory: \e[31m$cache_dir\e[0m"
     echo -e "Log file: \e[31m$log_file\e[0m"
-    read -r -p "Are you sure? (y/n): " confirm
+    print -n "Are you sure? (y/n): "
+    read confirm
     if [[ $confirm != "y" ]]; then
         echo "Aborted."
         return
@@ -884,8 +885,8 @@ clear_command() {
     if [ -d "$cache_dir" ]; then
         local cache_files
         cache_files=$(list_cache)
-        if [ -n "$cache_files" ]; then
-            while read -r line; do
+        if [[ -n "$cache_files" ]]; then
+            while IFS= read -r line; do
                 file=$(echo "$line" | cut -d ' ' -f 2-)
                 rm "$file"
                 echo "Removed: $file"
@@ -902,7 +903,7 @@ usage_command() {
     local log_file=${ACSH_LOG_FILE:-"$HOME/.autocomplete/autocomplete.log"} cache_dir=${ACSH_CACHE_DIR:-"$HOME/.autocomplete/cache"}
     local cache_size number_of_lines api_cost avg_api_cost
     cache_size=$(list_cache | wc -l)
-    echo_green "Autocomplete.sh - Usage Information"
+    echo_green "Autocomplete.zsh - Usage Information"
     echo
     echo -n "Log file: "; echo -e "\e[90m$log_file\e[0m"
     if [ ! -f "$log_file" ]; then
@@ -948,7 +949,7 @@ menu_selector() {
         echo
         echo "Select a Language Model (Up/Down arrows, Enter to select, 'q' to quit):"
         for i in "${!options[@]}"; do
-            if [[ $i -eq $selected ]]; then
+            if (( i == selected )); then
                 echo -e "\e[1;32m> ${options[i]}\e[0m"
             else
                 echo "  ${options[i]}"
@@ -963,13 +964,13 @@ menu_selector() {
         case $key in
             up)
                 ((selected--))
-                if ((selected < 0)); then
+                if (( selected < 0 )); then
                     selected=$((${#options[@]} - 1))
                 fi
                 ;;
             down)
                 ((selected++))
-                if ((selected >= ${#options[@]})); then
+                if (( selected >= ${#options[@]} )); then
                     selected=0
                 fi
                 ;;
@@ -990,11 +991,13 @@ model_command() {
     clear
     local selected_model options=()
     if [[ $# -ne 3 ]]; then
-        mapfile -t sorted_keys < <(for key in "${!_autocomplete_modellist[@]}"; do echo "$key"; done | sort)
+        # In zsh, use a simple for-loop to build an array of sorted keys.
+        local sorted_keys
+        sorted_keys=($(for key in ${(k)_autocomplete_modellist}; do echo "$key"; done | sort))
         for key in "${sorted_keys[@]}"; do
             options+=("$key")
         done
-        echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+        echo -e "\e[1;32mAutocomplete.zsh - Model Configuration\e[0m"
         menu_selector "${options[@]}"
         selected_option=$?
         if [[ $selected_option -eq 1 ]]; then
@@ -1028,10 +1031,10 @@ model_command() {
         elif [[ ${ACSH_PROVIDER^^} == "GROQ" ]]; then
             echo "Create a new one: https://console.groq.com/keys"
         fi
-        echo -n "Enter your ${ACSH_PROVIDER^^} API Key: "
+        print -n "Enter your ${ACSH_PROVIDER^^} API Key: "
         read -sr user_api_key_input < /dev/tty
         clear
-        echo -e "\e[1;32mAutocomplete.sh - Model Configuration\e[0m"
+        echo -e "\e[1;32mAutocomplete.zsh - Model Configuration\e[0m"
         if [[ -n "$user_api_key_input" ]]; then
             export ACSH_ACTIVE_API_KEY="$user_api_key_input"
             set_config "${ACSH_PROVIDER,,}_api_key" "$user_api_key_input"
@@ -1115,7 +1118,7 @@ case "$1" in
         if [[ -n "$1" ]]; then
             echo_error "Unknown command $1 - run 'autocomplete --help' for usage or visit https://autocomplete.sh"
         else
-            echo_green "Autocomplete.sh - LLM Powered Bash Completion - Version $ACSH_VERSION - https://autocomplete.sh"
+            echo_green "Autocomplete.zsh - LLM Powered Zsh Completion - Version $ACSH_VERSION - https://autocomplete.sh"
         fi
         ;;
 esac
