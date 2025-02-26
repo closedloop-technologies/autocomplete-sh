@@ -4,7 +4,7 @@
 # This install script downloads the latest version of the LLMs
 
 # The URL of the latest version of the LLMs
-ACSH_VERSION="v0.4.2"
+ACSH_VERSION="v0.4.3"
 BRANCH_OR_VERSION=${1:-$ACSH_VERSION}
 
 # The default location to install the LLMs
