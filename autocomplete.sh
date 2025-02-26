@@ -15,7 +15,8 @@
 
 error_exit() {
     echo -e "\e[31mAutocomplete.sh - $1\e[0m" >&2
-    exit 1
+    # In a completion context, exit is too severe. Use return instead.
+    return 1
 }
 
 echo_error() {
@@ -30,9 +31,8 @@ echo_green() {
 #                      Global Variables & Model Definitions                   #
 ###############################################################################
 
-export ACSH_VERSION=0.4.3
+export ACSH_VERSION=0.4.4
 
-# Supported models defined in an associative array.
 unset _autocomplete_modellist
 declare -A _autocomplete_modellist
 # OpenAI models
@@ -46,7 +46,6 @@ _autocomplete_modellist['anthropic:	claude-3-7-sonnet-20250219']='{ "completion_
 _autocomplete_modellist['anthropic:	claude-3-5-sonnet-20241022']='{ "completion_cost":0.0000150, "prompt_cost":0.0000030, "endpoint": "https://api.anthropic.com/v1/messages", "model": "claude-3-5-sonnet-20241022", "provider": "anthropic" }'
 _autocomplete_modellist['anthropic:	claude-3-5-haiku-20241022']='{ "completion_cost":0.0000040, "prompt_cost":0.0000008, "endpoint": "https://api.anthropic.com/v1/messages", "model": "claude-3-5-haiku-20241022", "provider": "anthropic" }'
 # Groq models
-# Production Models
 _autocomplete_modellist['groq:		llama3-8b-8192']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama3-8b-8192", "provider": "groq" }'
 _autocomplete_modellist['groq:		llama3-70b-8192']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama3-70b-8192", "provider": "groq" }'
 _autocomplete_modellist['groq:		llama-3.3-70b-versatile']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama-3.3-70b-versatile", "provider": "groq" }'
@@ -54,8 +53,7 @@ _autocomplete_modellist['groq:		llama-3.1-8b-instant']='{ "completion_cost":0.00
 _autocomplete_modellist['groq:		llama-guard-3-8b']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama-guard-3-8b", "provider": "groq" }'
 _autocomplete_modellist['groq:		mixtral-8x7b-32768']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "mixtral-8x7b-32768", "provider": "groq" }'
 _autocomplete_modellist['groq:		gemma2-9b-it']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "gemma2-9b-it", "provider": "groq" }'
-# Groq models
-# Preview Models
+# Groq preview models
 _autocomplete_modellist['groq:		mistral-saba-24b']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "mistral-saba-24b", "provider": "groq" }'
 _autocomplete_modellist['groq:		qwen-2.5-coder-32b']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "qwen-2.5-coder-32b", "provider": "groq" }'
 _autocomplete_modellist['groq:		deepseek-r1-distill-qwen-32b']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "deepseek-r1-distill-qwen-32b", "provider": "groq" }'
@@ -63,7 +61,6 @@ _autocomplete_modellist['groq:		deepseek-r1-distill-llama-70b-specdec']='{ "comp
 _autocomplete_modellist['groq:		llama-3.3-70b-specdec']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama-3.3-70b-specdec", "provider": "groq" }'
 _autocomplete_modellist['groq:		llama-3.2-1b-preview']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama-3.2-1b-preview", "provider": "groq" }'
 _autocomplete_modellist['groq:		llama-3.2-3b-preview']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "https://api.groq.com/openai/v1/chat/completions", "model": "llama-3.2-3b-preview", "provider": "groq" }'
-
 # Ollama model
 _autocomplete_modellist['ollama:	codellama']='{ "completion_cost":0.0000000, "prompt_cost":0.0000000, "endpoint": "http://localhost:11434/api/chat", "model": "codellama", "provider": "ollama" }'
 
@@ -79,7 +76,7 @@ _get_terminal_info() {
  * Operating system: \$OSTYPE=$OSTYPE
  * Shell: \$BASH=$BASH
  * Terminal type: \$TERM=$TERM
- * Hostname: \$HOSTNAME=$HOSTNAME"
+ * Hostname: \$HOSTNAME"
     echo "$terminal_info"
 }
 
@@ -145,15 +142,19 @@ _get_recent_files() {
     find . -maxdepth 1 -type f -exec ls -ld {} + | sort -r | head -n "$FILE_LIMIT"
 }
 
+# Rewritten _get_help_message using a heredoc to preserve formatting.
 _get_help_message() {
     local COMMAND HELP_INFO
     COMMAND=$(echo "$1" | awk '{print $1}')
     HELP_INFO=""
     {
         set +e
-        HELP_INFO=$($COMMAND --help 2>&1 || true)
+        HELP_INFO=$(cat <<EOF
+$($COMMAND --help 2>&1 || true)
+EOF
+        )
         set -e
-    } || HELP_INFO="Error: '$COMMAND --help' not available"
+    } || HELP_INFO="'$COMMAND --help' not available"
     echo "$HELP_INFO"
 }
 
@@ -341,7 +342,8 @@ openai_completion() {
     user_input=${*:-$default_user_input}
 
     if [[ -z "$ACSH_ACTIVE_API_KEY" && ${ACSH_PROVIDER^^} != "OLLAMA" ]]; then
-        error_exit "ACSH_ACTIVE_API_KEY not set. Please set it with: export ${ACSH_PROVIDER^^}_API_KEY=<your-api-key>"
+        echo_error "ACSH_ACTIVE_API_KEY not set. Please set it with: export ${ACSH_PROVIDER^^}_API_KEY=<your-api-key>"
+        return
     fi
     api_key="${ACSH_ACTIVE_API_KEY:-$OPENAI_API_KEY}"
     payload=$(_build_payload "$user_input")
@@ -350,15 +352,15 @@ openai_completion() {
     attempt=1
     while [ $attempt -le $max_attempts ]; do
         if [[ "${ACSH_PROVIDER^^}" == "ANTHROPIC" ]]; then
-            response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
+            response=$(\curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
                 -H "content-type: application/json" \
                 -H "anthropic-version: 2023-06-01" \
                 -H "x-api-key: $api_key" \
                 --data "$payload")
         elif [[ "${ACSH_PROVIDER^^}" == "OLLAMA" ]]; then
-            response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" --data "$payload")
+            response=$(\curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" --data "$payload")
         else
-            response=$(curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
+            response=$(\curl -s -m "$timeout" -w "\n%{http_code}" "$endpoint" \
                 -H "Content-Type: application/json" \
                 -H "Authorization: Bearer $api_key" \
                 -d "$payload")
@@ -716,12 +718,16 @@ acsh_load_config() {
         if [[ -z "$ACSH_OLLAMA_API_KEY" && -n "$LLM_API_KEY" ]]; then
             export ACSH_OLLAMA_API_KEY="$LLM_API_KEY"
         fi
+        # If the custom API key was set, map it to OLLAMA if needed.
+        if [[ -z "$ACSH_OLLAMA_API_KEY" && -n "$ACSH_CUSTOM_API_KEY" ]]; then
+            export ACSH_OLLAMA_API_KEY="$ACSH_CUSTOM_API_KEY"
+        fi
         case "${ACSH_PROVIDER:-openai}" in
             "openai") export ACSH_ACTIVE_API_KEY="$ACSH_OPENAI_API_KEY" ;;
             "anthropic") export ACSH_ACTIVE_API_KEY="$ACSH_ANTHROPIC_API_KEY" ;;
             "groq") export ACSH_ACTIVE_API_KEY="$ACSH_GROQ_API_KEY" ;;
             "ollama") export ACSH_ACTIVE_API_KEY="$ACSH_OLLAMA_API_KEY" ;;
-            *) error_exit "Unknown provider: $ACSH_PROVIDER" ;;
+            *) echo_error "Unknown provider: $ACSH_PROVIDER" ;;
         esac
     else
         echo "Configuration file not found: $config_file"
@@ -787,10 +793,15 @@ remove_command() {
     autocomplete_script=$(command -v autocomplete)
     if [ -n "$autocomplete_script" ]; then
         echo "Autocomplete script is at: $autocomplete_script"
-        read -r -p "Remove the autocomplete script? (y/n): " confirm
-        if [[ $confirm == "y" ]]; then
+        if [ "$1" == "-y" ]; then
             rm "$autocomplete_script"
             echo "Removed: $autocomplete_script"
+        else
+            read -r -p "Remove the autocomplete script? (y/n): " confirm
+            if [[ $confirm == "y" ]]; then
+                rm "$autocomplete_script"
+                echo "Removed: $autocomplete_script"
+            fi
         fi
     fi
     echo "Uninstallation complete."
