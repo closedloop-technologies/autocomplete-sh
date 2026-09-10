@@ -7,6 +7,40 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v0.6.0] - 2026-09-10
+
+### Added
+- Added opt-in, bounded prompt context for terminal state, environment names, command history, recent files, and command help
+- Added OpenAI-compatible endpoint support with optional custom request headers and extra JSON request fields
+- Added deterministic offline coverage for Bash and Zsh provider, cache, completion, context, and installer behavior
+
+### Changed
+- Made Tab completion shell-native and provider-free; AI requests now occur only through explicit commands or Bash AI key bindings
+- Added strict configuration validation and a five-second default request timeout before cache or network access
+- Included all response-affecting inputs in cache identity and validated cached and fresh completion lines before display
+- Made installation and shell startup-file updates atomic, preserving unrelated startup-file content
+
+### Fixed
+- Preserved spaces and tabs in custom header values while rejecting unsafe header names and control characters
+- Handled malformed provider responses and missing usage fields without leaking partial output or corrupting usage totals
+- Fixed Bash AI action dry-runs to load persisted configuration and allowed empty binding variables to disable Readline actions
+- Fixed `autocomplete remove -y` in Zsh so it removes the installed executable without prompting
+- Fixed config status guidance to use the current CLI commands
+- Fixed no-argument runtime sourcing under shells that enable unset-variable errors
+
+### Removed
+- Removed unused error and completion-diagnostic helpers from both shell runtimes
+
+### Security
+- Kept API-key values out of prompt context and cache keys, using only a SHA-256 key digest for cache isolation
+- Restricted configuration, cache, and temporary files to owner-only permissions
+- Rejected unsafe extra request-body keys and malformed or control-character completion output
+- Kept provider authorization values out of the curl process argument vector and rejected API keys containing CR/LF
+
+### Infrastructure
+- Added repository-specific agent guidance for domain documentation, issue tracking, and triage labels
+- Added a Keep a Changelog release history through v0.5.0
+- Reduced tracked documentation media from 8.4 MiB to 3.1 MiB while preserving its content
 
 ## [v0.5.0] - 2025-02-26
 
@@ -188,7 +222,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added CLI commands, function-calling API, caching, and retry logic.
 - Added command history and shell environment variable support.
 
-[Unreleased]: https://github.com/klarrimore/autocomplete-sh/compare/v0.5.0...HEAD
+[Unreleased]: https://github.com/klarrimore/autocomplete-sh/compare/v0.6.0...HEAD
+[v0.6.0]: https://github.com/klarrimore/autocomplete-sh/compare/v0.5.0...v0.6.0
 [v0.5.0]: https://github.com/klarrimore/autocomplete-sh/compare/v0.4.4...v0.5.0
 [v0.4.4]: https://github.com/klarrimore/autocomplete-sh/compare/v0.4.3...v0.4.4
 [v0.4.3]: https://github.com/klarrimore/autocomplete-sh/compare/v0.4.2...v0.4.3

@@ -1,0 +1,31 @@
+{
+  "id": "chatcmpl-acsh-test-001",
+  "object": "chat.completion",
+  "created": 1725000000,
+  "model": "gpt-4o",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_acsh_test_001",
+            "type": "function",
+            "function": {
+              "name": "bash_completions",
+              "arguments": "{\"commands\": [\"systemctl --failed\"]}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 4,
+    "total_tokens": 16
+  }
+}

@@ -1,0 +1,9 @@
+#!/bin/bash
+# Stub wget for the offline test suite.
+#
+# It exists ONLY to satisfy docs/install.sh's dependency preflight (which uses
+# `command -v wget`); the suite never performs a real download and never
+# invokes wget. If any code path actually tries to run it, abort loudly — the
+# suite must stay 100% offline.
+echo "tests/helpers/wget: stub refuses to download; the test suite is offline-only" >&2
+exit 1

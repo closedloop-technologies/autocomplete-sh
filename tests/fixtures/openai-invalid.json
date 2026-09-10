@@ -1,0 +1,26 @@
+{
+  "id": "chatcmpl-acsh-test-002",
+  "object": "chat.completion",
+  "created": 1725000001,
+  "model": "gpt-4o",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": null,
+        "tool_calls": [
+          {
+            "id": "call_acsh_test_002",
+            "type": "function",
+            "function": {
+              "name": "bash_completions",
+              "arguments": "{\"commands\": \"not-an-array\"}"
+            }
+          }
+        ]
+      },
+      "finish_reason": "tool_calls"
+    }
+  ]
+}

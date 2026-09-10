@@ -1,0 +1,22 @@
+{
+  "id": "msg_acsh_test_001",
+  "type": "message",
+  "role": "assistant",
+  "content": [
+    {
+      "type": "tool_use",
+      "id": "toolu_acsh_test_001",
+      "name": "bash_completions",
+      "input": {
+        "commands": [
+          "systemctl --failed",
+          "journalctl -p err"
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "input_tokens": 12,
+    "output_tokens": 4
+  }
+}

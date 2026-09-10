@@ -1,0 +1,9 @@
+{
+  "model": "codellama",
+  "created_at": "2026-08-21T22:18:59Z",
+  "message": {
+    "role": "assistant",
+    "content": "{\"completions\":[\"systemctl --failed\",\"journalctl -p err\"]}"
+  },
+  "done": true
+}

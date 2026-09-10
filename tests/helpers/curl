@@ -1,0 +1,90 @@
+#!/bin/bash
+# Fake curl for the offline autocomplete-sh test suite. NEVER makes a network
+# request.
+#
+# Behavior (all driven by environment variables set by the test):
+#   * each invocation is appended as one line to $ACSH_TEST_CURL_LOG
+#   * every -H/--header argument is appended to $ACSH_TEST_HEADERS_FILE
+#   * every -d/--data(-raw/...)-style argument is appended to $ACSH_TEST_BODY_FILE
+#   * stdout is the content of $ACSH_TEST_RESPONSE_FILE (when set and readable)
+#     followed by ${ACSH_TEST_STATUS:-200} in curl's "-w" style ("\n%{http_code}")
+#   * $ACSH_TEST_DELAY (+ the supplied --max-time/-m) simulates latency and a
+#     bounded timeout: when the delay exceeds the caller's deadline the fake
+#     sleeps until the deadline, prints a zero status (like real curl -w) and
+#     exits 28 (curl's timeout exit code); otherwise it sleeps and succeeds.
+
+log=${ACSH_TEST_CURL_LOG:-}
+if [ -n "$log" ]; then
+    # One invocation per log line: the -d payload and -w format contain real
+    # newlines, escape them so `wc -l` counts invocations, not payload lines.
+    logline=$*
+    logline=${logline//$'\n'/\\n}
+    printf '%s\n' "$logline" >> "$log"
+fi
+
+headers_file=${ACSH_TEST_HEADERS_FILE:-}
+body_file=${ACSH_TEST_BODY_FILE:-}
+response_file=${ACSH_TEST_RESPONSE_FILE:-}
+status=${ACSH_TEST_STATUS:-200}
+delay=${ACSH_TEST_DELAY:-}
+
+max_time=""
+args=("$@")
+i=0
+while [ "$i" -lt "${#args[@]}" ]; do
+    arg=${args[$i]}
+    case "$arg" in
+        -H|--header)
+            i=$((i + 1))
+            if [ "${args[$i]}" = "@-" ]; then
+                IFS= read -r stdin_header || exit 2
+                [ -n "$headers_file" ] && printf '%s\n' "$stdin_header" >> "$headers_file"
+            else
+                [ -n "$headers_file" ] && printf '%s\n' "${args[$i]}" >> "$headers_file"
+            fi
+            ;;
+        --header=*)
+            [ -n "$headers_file" ] && printf '%s\n' "${arg#--header=}" >> "$headers_file"
+            ;;
+        -d|--data|--data-ascii|--data-binary|--data-raw|--data-urlencode)
+            i=$((i + 1))
+            [ -n "$body_file" ] && printf '%s\n' "${args[$i]}" >> "$body_file"
+            ;;
+        --data=*|--data-ascii=*|--data-binary=*|--data-raw=*|--data-urlencode=*)
+            [ -n "$body_file" ] && printf '%s\n' "${arg#*=}" >> "$body_file"
+            ;;
+        -m|--max-time)
+            i=$((i + 1))
+            max_time=${args[$i]}
+            ;;
+        --max-time=*)
+            max_time=${arg#--max-time=}
+            ;;
+        -m*)
+            max_time=${arg#-m}
+            ;;
+        -H*)
+            [ -n "$headers_file" ] && printf '%s\n' "${arg#-H}" >> "$headers_file"
+            ;;
+        -d*)
+            [ -n "$body_file" ] && printf '%s\n' "${arg#-d}" >> "$body_file"
+            ;;
+    esac
+    i=$((i + 1))
+done
+
+if [ -n "$delay" ]; then
+    if [ -n "$max_time" ] && awk -v a="$delay" -v b="$max_time" 'BEGIN { exit !(a > b) }'; then
+        # Delay exceeds the caller's deadline: bounded timeout, like real curl.
+        sleep "$max_time"
+        printf '\n000\n'
+        exit 28
+    fi
+    sleep "$delay"
+fi
+
+if [ -n "$response_file" ] && [ -f "$response_file" ]; then
+    cat "$response_file"
+fi
+printf '\n%s\n' "$status"
+exit 0

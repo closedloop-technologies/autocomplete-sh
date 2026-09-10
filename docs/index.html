@@ -12,7 +12,7 @@
     />
     <meta
       property="og:description"
-      content="Autocomplete.sh adds AI-powered command-line suggestions directly to your Bash or Zsh terminal. Just type <TAB><TAB> and it calls an LLM to return the top suggestions for you."
+      content="Native Bash &amp; Zsh Tab completion, plus AI-powered suggestions requested through explicit actions."
     />
     <meta
       property="og:image"
@@ -29,7 +29,7 @@
     />
     <meta
       name="twitter:description"
-      content="Autocomplete.sh adds AI-powered command-line suggestions directly to your Bash or Zsh terminal. Just type <TAB><TAB> and it calls an LLM to return the top suggestions for you."
+      content="Native Bash &amp; Zsh Tab completion, plus AI-powered suggestions requested through explicit actions."
     />
     <meta
       name="twitter:image"
@@ -39,7 +39,7 @@
     <!-- Additional meta tags -->
     <meta
       name="description"
-      content="Autocomplete.sh adds AI-powered command-line suggestions directly to your Bash or Zsh terminal. Just type <TAB><TAB> and it calls an LLM to return the top suggestions for you."
+      content="Native Bash &amp; Zsh Tab completion, plus AI-powered suggestions requested through explicit actions."
     />
     <meta
       name="keywords"
@@ -319,8 +319,8 @@
               Lightning Fast
             </h3>
             <p>
-              Double <span class="terminal-highlight">TAB</span> to instantly
-              summon LLM-powered suggestions.
+              Press <span class="terminal-highlight">TAB</span> for instant,
+              shell-native completions — provider-free, no LLM involved.
             </p>
           </div>
           <div class="terminal-bg p-6">
@@ -328,15 +328,18 @@
               Context-Aware
             </h3>
             <p>
-              Leverages your environment, history, and command help for smarter
-              suggestions.
+              Opt-in terminal, environment-name, history, recent-file, and
+              <code>--help</code> context — every section off by default.
             </p>
           </div>
           <div class="terminal-bg p-6">
             <h3 class="text-xl font-semibold mb-3 terminal-highlight">
               LLM Agnostic
             </h3>
-            <p>Choose from various LLMs to balance speed, power, and cost.</p>
+            <p>
+              Choose from OpenAI, Groq, Anthropic, and Ollama — or any
+              OpenAI-compatible endpoint.
+            </p>
           </div>
           <div class="terminal-bg p-6">
             <h3 class="text-xl font-semibold mb-3 terminal-highlight">
@@ -375,23 +378,72 @@
             ></iframe>
           </div>
         </div>
+        <div class="terminal-bg p-6 rounded-md">
+          <p class="mb-2">
+            <span class="terminal-highlight">TAB</span> completes the way your
+            shell always has — natively, with no provider. For AI suggestions,
+            ask explicitly:
+          </p>
+          <pre
+            class="p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
+          >$ <code class="text-green-400">autocomplete command "reformat this video to fit youtube"</code></pre>
+          <p class="mb-2 mt-4">
+            Preview the exact prompt — including any enabled context, no network
+            call:
+          </p>
+          <pre
+            class="p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
+          >$ <code class="text-green-400">autocomplete command --dry-run "reformat this video to fit youtube"</code></pre>
+        </div>
+        <div class="terminal-bg p-6 rounded-md mt-6">
+          <h3 class="text-xl font-semibold mb-3 terminal-highlight">
+            Bash live-line AI actions
+          </h3>
+          <p class="mb-3">
+            Bash also offers explicit, non-executing completion and rewrite
+            previews. Zsh continues to use the cross-shell
+            <code>autocomplete command "…"</code> interface.
+          </p>
+          <pre
+            class="p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
+          >$ <code class="text-green-400">autocomplete ai-complete "git ch"</code>
+$ <code class="text-green-400">autocomplete ai-rewrite "show failed units"</code>
+$ <code class="text-green-400">autocomplete context --mode ai-completion "git ch"</code></pre>
+          <p class="mt-3">
+            The default Readline bindings are <kbd>Ctrl-X Ctrl-A</kbd> for
+            completion and <kbd>Ctrl-X Ctrl-B</kbd> for rewrite. Set
+            <code>ACSH_AI_COMPLETE_KEY</code> or
+            <code>ACSH_AI_REWRITE_KEY</code> before sourcing
+            <code>autocomplete.sh</code>; use an empty value to disable that
+            binding. Suggestions are previewed and never executed or inserted
+            automatically.
+          </p>
+        </div>
       </section>
       <section id="getting-started" class="mb-24">
         <h2 class="text-3xl sm:text-4xl mb-6 terminal-text font-bold">
           Quick Start
         </h2>
         <div class="terminal-bg p-6 rounded-md">
-          <p class="mb-4">Install Autocomplete.sh with a single command (works with both Bash and Zsh):</p>
+          <p class="mb-4">Download the installer, then run it for your shell (Bash or Zsh). The installer places the <code>autocomplete</code> command at <code>$HOME/.local/bin/autocomplete</code>.</p>
+          <p class="mb-4">
+            Before installing, <code>$HOME/.local/bin</code> must already be in
+            <code>PATH</code>. If it is not, run:
+          </p>
+          <pre
+            class="p-2 rounded mb-4 overflow-x-auto whitespace-pre-wrap break-words text-left"
+          >$ <code class="text-green-400">export PATH="$HOME/.local/bin:$PATH"</code></pre>
           <div class="relative copyable">
             <pre
               class="text-white py-4 rounded overflow-x-auto whitespace-pre text-left"
               id="install-command"
-            ><span class="text-white">$</span> <code class="text-green-400">wget -qO- https://autocomplete.sh/install.sh | bash<span class="blink-cursor"></span></code></pre>
+            ><span class="text-white">$</span> <code class="text-green-400">wget -O install.sh https://autocomplete.sh/install.sh</code>
+<span class="text-white">$</span> <code class="text-green-400">bash install.sh --shell bash --version main<span class="blink-cursor"></span></code></pre>
 
             <button
               id="install-command-button"
               class="hidden sm:flex absolute top-3 right-2 px-2 py-1 text-sm text-white rounded hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500"
-              onclick="copyToClipboard('wget -qO- https://autocomplete.sh/install.sh | bash')"
+              onclick="copyToClipboard('wget -O install.sh https://autocomplete.sh/install.sh\nbash install.sh --shell bash --version main')"
             >
               <svg
                 xmlns="http://www.w3.org/2000/svg"
@@ -446,7 +498,7 @@
           Supported Language Models
         </h2>
         <div class="terminal-bg p-6">
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-6 text-center mb-6">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-6 text-center mb-6">
             <div class="p-4">
               <h3 class="text-lg font-semibold terminal-highlight">OpenAI</h3>
             </div>
@@ -461,6 +513,11 @@
             <div class="p-4">
               <h3 class="text-lg font-semibold terminal-highlight">Ollama</h3>
             </div>
+            <div class="p-4">
+              <h3 class="text-lg font-semibold terminal-highlight">
+                OpenAI-compatible
+              </h3>
+            </div>
           </div>
           <div class="max-w-3xl mx-auto">
             <p class="mb-4 text-left">To change the active model:</p>
@@ -470,8 +527,54 @@
             <img
               src="/images/autocomplete-model.gif"
               alt="Supported Language Models"
-              class="w-full h-auto rounded-lg shadow-lg border-2 border-gray-700"
+              class="w-full h-auto rounded-lg shadow-lg border-2 border-gray-700 mb-8"
             />
+            <h3 class="text-xl font-semibold mb-3 terminal-highlight text-left">
+              OpenAI-compatible providers
+            </h3>
+            <p class="mb-4 text-left">
+              The <code>openai-compatible</code> provider targets any local or
+              remote server that implements the OpenAI Chat Completions API. A
+              generic local example:
+            </p>
+            <pre
+              class="p-2 rounded mb-4 overflow-x-auto whitespace-pre-wrap break-words text-left"
+            ><code class="text-green-400">autocomplete config set provider openai-compatible
+autocomplete config set endpoint http://localhost:8080/v1/chat/completions
+autocomplete config set model your-model-name
+autocomplete config set request_timeout_seconds 5
+autocomplete config set extra_body_json '{"chat_template_kwargs":{"enable_thinking":false}}'</code></pre>
+            <p class="mb-4 text-left">
+              <code>openai_compatible_api_key</code> may be left empty. With no
+              key, the <code>Authorization</code> header is omitted, so keyless
+              local endpoints work as-is. Set it, or export
+              <code>OPENAI_COMPATIBLE_API_KEY</code>, to send
+              <code>Authorization: Bearer …</code>.
+            </p>
+            <ul class="mb-4 text-left list-disc list-inside space-y-2">
+              <li>
+                <code>request_headers_json</code> and
+                <code>extra_body_json</code> apply only to the
+                <code>openai-compatible</code> provider; non-default values are
+                a configuration error with any other provider.
+              </li>
+              <li>
+                <code>extra_body_json</code> may add request fields, but the
+                reserved fields <code>model</code>, <code>messages</code>,
+                <code>tools</code>, <code>tool_choice</code>,
+                <code>response_format</code>, and <code>stream</code> are
+                rejected.
+              </li>
+              <li>
+                <code>Authorization</code> and <code>Content-Type</code> are
+                managed by the client and cannot be overridden in
+                <code>request_headers_json</code>.
+              </li>
+              <li>
+                Provider requests time out after five seconds by default
+                (<code>request_timeout_seconds=5</code>).
+              </li>
+            </ul>
           </div>
         </div>
       </section>
@@ -485,12 +588,59 @@
             <p class="mb-4 text-left">View current settings:</p>
             <pre
               class="p-2 rounded mb-12 overflow-x-auto whitespace-pre-wrap break-words text-left"
-            >$ <code class="text-green-400">source autocomplete config</code><span class="blink-cursor"></span></pre>
+            >$ <code class="text-green-400">autocomplete config</code><span class="blink-cursor"></span></pre>
             <img
               src="/images/autocomplete-config.png"
               alt="Autocomplete Configuration Screen"
               class="w-full h-auto rounded-lg shadow-lg border-2 border-gray-700"
             />
+            <p class="mb-4 text-left">
+              Every context section is opt-in and off by default. The base
+              prompt contains only the mode, active shell, user input, and
+              output instructions. A section is appended only when its switch
+              is <code>true</code> and its bounded helper produced something to
+              include.
+            </p>
+            <ul class="mb-4 text-left list-disc list-inside space-y-2">
+              <li>
+                <code>context_terminal=false</code>: physical working
+                directory, OS type, shell, and terminal type — never username,
+                hostname, or home.
+              </li>
+              <li>
+                <code>context_environment=false</code>: sorted environment
+                variable names only — never values, and <code>ACSH_*</code>
+                names are excluded.
+              </li>
+              <li>
+                <code>context_history=false</code>: recent commands, with API
+                keys, tokens, secrets, passwords, and
+                <code>Authorization: Bearer …</code> redacted.
+              </li>
+              <li>
+                <code>context_recent_files=false</code>: current-directory
+                file basenames only — no absolute paths, owners, or
+                permissions.
+              </li>
+              <li>
+                <code>context_help=false</code>: <code>--help</code> output of
+                the first executable in the request; aliases, functions, and
+                builtins are skipped.
+              </li>
+            </ul>
+            <p class="mb-4 text-left">
+              Section bounds:
+              <code>max_environment_names=50</code>,
+              <code>max_history_commands=10</code>,
+              <code>max_recent_files=10</code>,
+              <code>max_help_lines=40</code>, and
+              <code>help_timeout_seconds=0.25</code>.
+            </p>
+            <p class="mb-4 text-left">
+              Preview exactly what a request would send, without a network
+              call, with
+              <code>autocomplete command --dry-run "…"</code>.
+            </p>
             <p class="mb-4 text-left">Update settings:</p>
             <pre
               class="p-2 rounded overflow-x-auto whitespace-pre-wrap break-words text-left"
@@ -633,7 +783,7 @@
       document.querySelectorAll(".copyable").forEach((block) => {
         block.addEventListener("click", () => {
           copyToClipboard(
-            "wget -qO- https://autocomplete.sh/install.sh | bash"
+            "wget -O install.sh https://autocomplete.sh/install.sh\nbash install.sh --shell bash --version main"
           );
         });
       });

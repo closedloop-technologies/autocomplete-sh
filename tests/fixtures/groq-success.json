@@ -1,0 +1,20 @@
+{
+  "id": "chatcmpl-acsh-groq-001",
+  "object": "chat.completion",
+  "created": 1725000002,
+  "model": "llama-3.3-70b-versatile",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "{\"completions\":[\"systemctl --failed\",\"journalctl -p err\"]}"
+      },
+      "finish_reason": "stop"
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 12,
+    "completion_tokens": 4
+  }
+}
