@@ -13,6 +13,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added opt-in, bounded prompt context for terminal state, environment names, command history, recent files, and command help
 - Added OpenAI-compatible endpoint support with optional custom request headers and extra JSON request fields
 - Added deterministic offline coverage for Bash and Zsh provider, cache, completion, context, and installer behavior
+- Added a Bash `tab_display_mode` setting for inline menu completion
 
 ### Changed
 - Made Tab completion shell-native and provider-free; AI requests now occur only through explicit commands or Bash AI key bindings
@@ -27,6 +28,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Fixed `autocomplete remove -y` in Zsh so it removes the installed executable without prompting
 - Fixed config status guidance to use the current CLI commands
 - Fixed no-argument runtime sourcing under shells that enable unset-variable errors
+- Fixed empty Bash prompt completion so Tab no longer installs or displays Bash's minimal fallback
 
 ### Removed
 - Removed unused error and completion-diagnostic helpers from both shell runtimes

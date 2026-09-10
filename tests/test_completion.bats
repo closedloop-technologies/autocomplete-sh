@@ -81,6 +81,20 @@ run_clean_zsh() {
     [[ "$output" == *"empty=clean"* ]]
 }
 
+@test "Bash tab_display_mode menu binds Tab to menu-complete" {
+    run_clean_bash '
+        source "$HOME/.local/bin/autocomplete" >/dev/null
+        build_config
+        set_config tab_display_mode menu >/dev/null
+        source "$HOME/.local/bin/autocomplete" enable >/dev/null 2>&1 || exit 9
+        bind -q menu-complete
+        bind -q menu-complete-backward
+    '
+    [ "$status" -eq 0 ]
+    [[ "$output" == *"menu-complete can be invoked via \"\\C-i\""* ]]
+    [[ "$output" == *"menu-complete-backward can be invoked via \"\\e[Z\""* ]]
+}
+
 @test "check_if_enabled identifies only the native -D handler and follows disable" {
     run_clean_bash '
         _pre_default() { COMPREPLY=(); }
@@ -190,6 +204,32 @@ EOF
     [[ "$output" != *"r1=124"* ]]
     [[ "$output" != *"r2=0"* ]]
     [[ "$output" != *"r2=124"* ]]
+    [[ "$output" == *"minimal=0"* ]]
+    [[ "$output" == *"curl=0"* ]]
+}
+
+@test "empty Bash command line is a native no-op and never installs minimal completion" {
+    export ACSH_TEST_CURL_LOG="$TEST_HOME/curl.log"
+    run_clean_bash '
+        if ! declare -F _comp_load >/dev/null 2>&1; then
+            [ -f /usr/share/bash-completion/bash_completion ] && source /usr/share/bash-completion/bash_completion
+            [ -f /etc/bash_completion ] && source /etc/bash_completion
+        fi
+        source "$HOME/.local/bin/autocomplete" enable >/dev/null 2>&1 || exit 9
+        if complete -p "" >/dev/null 2>&1; then echo "empty-spec-after-enable=present"; else echo "empty-spec-after-enable=absent"; fi
+        COMP_WORDS=("")
+        COMP_CWORD=0
+        _acsh_native_complete
+        echo "rc=$?"
+        echo "reply-count=${#COMPREPLY[@]}"
+        if complete -p "" >/dev/null 2>&1; then echo "empty-spec=present"; else echo "empty-spec=absent"; fi
+        echo "minimal=$(complete -p | grep -c _comp_complete_minimal)"
+        echo "curl=$(wc -l < "$ACSH_TEST_CURL_LOG" 2>/dev/null || echo 0)"
+    '
+    [[ "$output" == *"empty-spec-after-enable=absent"* ]]
+    [[ "$output" == *"rc=0"* ]]
+    [[ "$output" == *"reply-count=0"* ]]
+    [[ "$output" == *"empty-spec=absent"* ]]
     [[ "$output" == *"minimal=0"* ]]
     [[ "$output" == *"curl=0"* ]]
 }

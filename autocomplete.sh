@@ -555,6 +555,12 @@ _validate_config_value() {
         provider)
             _normalize_provider "$value" >/dev/null
             ;;
+        tab_display_mode)
+            if [[ "$value" != "list" && "$value" != "menu" ]]; then
+                echo_error "$key must be 'list' or 'menu'."
+                return 1
+            fi
+            ;;
         context_terminal|context_environment|context_history|context_recent_files|context_help)
             if [[ "$value" != "true" && "$value" != "false" ]]; then
                 echo_error "$key must be 'true' or 'false'."
@@ -600,6 +606,7 @@ _validate_runtime_config() {
             api_prompt_cost) _validate_config_value "$key" "${ACSH_API_PROMPT_COST:-0.000005}" || return 1 ;;
             api_completion_cost) _validate_config_value "$key" "${ACSH_API_COMPLETION_COST:-0.000015}" || return 1 ;;
             request_timeout_seconds) _validate_config_value "$key" "${ACSH_REQUEST_TIMEOUT_SECONDS:-5}" || return 1 ;;
+            tab_display_mode) _validate_config_value "$key" "${ACSH_TAB_DISPLAY_MODE:-list}" || return 1 ;;
             context_terminal) _validate_config_value "$key" "${ACSH_CONTEXT_TERMINAL:-false}" || return 1 ;;
             context_environment) _validate_config_value "$key" "${ACSH_CONTEXT_ENVIRONMENT:-false}" || return 1 ;;
             context_history) _validate_config_value "$key" "${ACSH_CONTEXT_HISTORY:-false}" || return 1 ;;
@@ -617,6 +624,7 @@ temperature
 api_prompt_cost
 api_completion_cost
 request_timeout_seconds
+tab_display_mode
 context_terminal
 context_environment
 context_history
@@ -815,7 +823,7 @@ _validate_ai_rewrite() {
 # Return 0/1 whether a candidate command is destructive (display metadata only).
 _acsh_is_destructive() {
     local cmd="$1"
-    if echo "$cmd" | grep -Eq '^(sudo[[:space:]]+)?(rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*\-rf|>|mkfs|dd|shutdown|reboot)'; then
+    if echo "$cmd" | grep -Eq '^(sudo[[:space:]]+)?(rm[[:space:]]+(-[a-zA-Z]+[[:space:]]+)*-rf|>|mkfs|dd|shutdown|reboot)'; then
         return 0
     fi
     return 1
@@ -934,6 +942,10 @@ list_cache() {
 # spec; return 124 ONLY when a real spec was loaded (Bash retries with it).
 _acsh_native_complete() {
     local command_name="${COMP_WORDS[0]:-}"
+    if [[ -z "$command_name" ]]; then
+        COMPREPLY=()
+        return 0
+    fi
     if declare -F _comp_load >/dev/null 2>&1 && ! complete -p -- "$command_name" 2>/dev/null; then
         if _comp_load -- "$command_name" 2>/dev/null; then
             return 124
@@ -1384,6 +1396,10 @@ request_timeout_seconds: 5
 request_headers_json: {}
 extra_body_json: {}
 
+# Bash native completion display: list prints ambiguous candidates;
+# menu cycles candidates on Tab instead of dumping the list.
+tab_display_mode: list
+
 # Optional prompt context sections (all off by default)
 context_terminal: false
 context_environment: false
@@ -1746,6 +1762,9 @@ enable_command() {
     # Bash 5.x honors only -D from a combined -D -E invocation, so register the
     # empty-line spec explicitly to keep Tab on an empty prompt native-only.
     complete -E -F _acsh_native_complete -o bashdefault -o default
+    # bash-completion may register a named empty-string fallback that expands
+    # to every command on an empty prompt. Our empty prompt behavior is no-op.
+    complete -r "" 2>/dev/null || true
     # CLI completion for the `autocomplete` command itself.
     complete -F _autocompletesh_cli autocomplete 2>/dev/null || true
     # Register the explicit AI readline actions (configurable, free chords
@@ -1757,6 +1776,12 @@ enable_command() {
     if [[ -n "${ACSH_AI_REWRITE_KEY:-}" ]]; then
         bind -x "\"${ACSH_AI_REWRITE_KEY}\":_ai_rewrite_key" 2>/dev/null || true
     fi
+    case "${ACSH_TAB_DISPLAY_MODE:-list}" in
+        menu)
+            bind '"\t": menu-complete' 2>/dev/null || true
+            bind '"\e[Z": menu-complete-backward' 2>/dev/null || true
+            ;;
+    esac
 }
 
 disable_command() {
